@@ -2,8 +2,16 @@
   "name": "cadacomb",
   "version-string": "0.0.1",
   "dependencies": [
-    "nlohmann-json",
     "glm",
+    "nlohmann-json",
     "catch2"
-  ]
+  ],
+  "features": {
+    "render": {
+      "description": "CADacomb rendering helper with Vulcant",
+      "dependencies": [
+        "vulcant"
+      ]
+    }
+  }
 }

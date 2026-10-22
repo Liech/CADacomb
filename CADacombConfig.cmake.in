@@ -1,0 +1,25 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(glm REQUIRED)
+find_dependency(nlohmann_json REQUIRED)
+
+set(_cadacomb_has_render @CADACOMB_BUILD_RENDER@)
+if(_cadacomb_has_render)
+    if(NOT TARGET Vulcant::Vulcant)
+        find_dependency(Vulcant REQUIRED)
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/CADacombTargets.cmake")
+
+set(CADacomb_CADacomb_FOUND TRUE)
+if(_cadacomb_has_render)
+    set(CADacomb_Render_FOUND TRUE)
+    set(CADacomb_CADacombRender_FOUND TRUE)
+else()
+    set(CADacomb_Render_FOUND FALSE)
+    set(CADacomb_CADacombRender_FOUND FALSE)
+endif()
+
+check_required_components(CADacomb)
