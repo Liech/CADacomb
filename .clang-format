@@ -1,0 +1,38 @@
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+# Error you don't understand? Add Spaces "Bla: Value" instead of "Bla:Value"
+
+
+Language: Cpp
+
+BasedOnStyle: Mozilla    
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 200 
+
+AlignArrayOfStructures: Right
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  
+AlignConsecutiveBitFields:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  
+BreakBeforeBraces: Allman
+IncludeBlocks: Preserve
+FixNamespaceComments: false
+LineEnding: LF
+NamespaceIndentation: All
+AllowShortFunctionsOnASingleLine: Empty
+PointerAlignment: Left
+PenaltyReturnTypeOnItsOwnLine: 1000000
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
