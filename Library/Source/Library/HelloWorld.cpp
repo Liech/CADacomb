@@ -1,5 +1,9 @@
 #include "HelloWorld.h"
 
+HelloWorld::HelloWorld() {}
+
+HelloWorld::~HelloWorld() {}
+
 std::string HelloWorld::message() const
 {
     return "Hello World";
@@ -12,5 +16,4 @@ TEST_CASE("HelloWorld")
 {
     REQUIRE(HelloWorld().message() == "Hello World");
 }
-
 #endif
