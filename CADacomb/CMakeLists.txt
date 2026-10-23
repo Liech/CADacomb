@@ -144,6 +144,26 @@ set(Volume_SVOMesher_Files
 )
 source_group("Source/Volume/SVOMesher" FILES ${Volume_SVOMesher_Files})
 
+set(Volume_LODStrategy_Files
+    "Source/CADacomb/Volume/LODStrategy/CapacityTargetLODStrategy.h"
+    "Source/CADacomb/Volume/LODStrategy/CapacityTargetLODStrategy.cpp"
+    "Source/CADacomb/Volume/LODStrategy/DistanceBandLODStrategy.h"
+    "Source/CADacomb/Volume/LODStrategy/DistanceBandLODStrategy.cpp"
+    "Source/CADacomb/Volume/LODStrategy/FixedLODStrategy.h"
+    "Source/CADacomb/Volume/LODStrategy/FixedLODStrategy.cpp"
+    "Source/CADacomb/Volume/LODStrategy/FrustumAdaptiveLODStrategy.h"
+    "Source/CADacomb/Volume/LODStrategy/FrustumAdaptiveLODStrategy.cpp"
+    "Source/CADacomb/Volume/LODStrategy/LODDecision.h"
+    "Source/CADacomb/Volume/LODStrategy/LODDecision.cpp"
+    "Source/CADacomb/Volume/LODStrategy/LODStrategy.h"
+    "Source/CADacomb/Volume/LODStrategy/LODStrategy.cpp"
+    "Source/CADacomb/Volume/LODStrategy/SceneData.h"
+    "Source/CADacomb/Volume/LODStrategy/SceneData.cpp"
+    "Source/CADacomb/Volume/LODStrategy/ScreenSpaceLODStrategy.h"
+    "Source/CADacomb/Volume/LODStrategy/ScreenSpaceLODStrategy.cpp"
+)
+source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
+
 set(ALL_FILES
     ${Binary_Files}
     ${Triangle_Files}
@@ -158,6 +178,7 @@ set(ALL_FILES
     ${Volume_SVO_Blocky_Files}
     ${Volume_SVO_Generator_Files}
     ${Volume_SVOMesher_Files}
+    ${Volume_LODStrategy_Files}
 )
 
 add_library(CADacomb ${ALL_FILES})
