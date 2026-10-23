@@ -5,10 +5,10 @@
 
 void enforceWorkingDir(std::string exeDir)
 {
-    const size_t last_slash_idx = exeDir.find_last_of("\\/");
-    if (std::string::npos != last_slash_idx)
+    const size_t lastSlashIdx = exeDir.find_last_of("\\/");
+    if (std::string::npos != lastSlashIdx)
     {
-        exeDir.erase(last_slash_idx + 1);
+        exeDir.erase(lastSlashIdx + 1);
     }
     std::filesystem::current_path(exeDir);
 }

@@ -10,6 +10,8 @@ endif()
 set(Source_Files
     "Source/CADacombRender/RenderHelper.cpp"
     "Source/CADacombRender/RenderHelper.h"
+    "Source/CADacombRender/VulcantFragmentationBuffer.cpp"
+    "Source/CADacombRender/VulcantFragmentationBuffer.h"
 )
 source_group("Source" FILES ${Source_Files})
 
@@ -29,6 +31,7 @@ target_link_libraries(CADacombRender PUBLIC
 
 target_include_directories(CADacombRender PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source/CADacombRender>
     $<INSTALL_INTERFACE:include>
 )
 
@@ -61,6 +64,7 @@ if(CADACOMB_BUILD_TESTS)
     )
     target_include_directories(CADacombRenderTest PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source/CADacombRender
     )
     set_property(TARGET CADacombRenderTest PROPERTY COMPILE_DEFINITIONS ISTESTPROJECT=1)
 

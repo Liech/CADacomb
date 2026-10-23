@@ -5,14 +5,49 @@ project(CADacomb)
 find_package(glm REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-set(Source_Files
-    "Source/Library/HelloWorld.cpp"
-    "Source/Library/HelloWorld.h"
+set(Binary_Files
+    "Source/Util/Binary/base64.h"
+    "Source/Util/Binary/base64.cpp"
+    "Source/Util/Binary/BufferRange.h"
+    "Source/Util/Binary/BufferRange.cpp"
+    "Source/Util/Binary/BufferSpan.h"
+    "Source/Util/Binary/BufferSpan.cpp"
+    "Source/Util/Binary/DefragmentationBuffer.h"
+    "Source/Util/Binary/DefragmentationBuffer.cpp"
 )
-source_group("Source" FILES ${Source_Files})
+source_group("Source/Util/Binary" FILES ${Binary_Files})
+
+set(Triangle_Files
+    "Source/Triangle/BaseShapeGenerator.h"
+    "Source/Triangle/BaseShapeGenerator.cpp"
+    "Source/Triangle/Triangulation.h"
+    "Source/Triangle/Triangulation.cpp"
+    "Source/Triangle/sreiter_stl_reader_LICENSE"
+)
+source_group("Source/Triangle" FILES ${Triangle_Files})
+
+set(Triangle_HalfEdge_Files
+    "Source/Triangle/HalfEdge/HalfEdge.h"
+    "Source/Triangle/HalfEdge/HalfEdge.cpp"
+    "Source/Triangle/HalfEdge/HalfEdgeHealth.h"
+    "Source/Triangle/HalfEdge/HalfEdgeHealth.cpp"
+    "Source/Triangle/HalfEdge/mesh2halfedge.h"
+    "Source/Triangle/HalfEdge/mesh2halfedge.cpp"
+)
+source_group("Source/Triangle/HalfEdge" FILES ${Triangle_HalfEdge_Files})
+
+set(Triangle_Util_Files
+    "Source/Triangle/Util/STLWriter.h"
+    "Source/Triangle/Util/STLWriter.cpp"
+    "Source/Triangle/Util/stl_reader.h"
+)
+source_group("Source/Triangle/Util" FILES ${Triangle_Util_Files})
 
 set(ALL_FILES
-    ${Source_Files}
+    ${Binary_Files}
+    ${Triangle_Files}
+    ${Triangle_HalfEdge_Files}
+    ${Triangle_Util_Files}
 )
 
 add_library(CADacomb ${ALL_FILES})
@@ -26,6 +61,7 @@ target_link_libraries(CADacomb PUBLIC
 
 target_include_directories(CADacomb PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source/Triangle>
     $<INSTALL_INTERFACE:include>
 )
 
@@ -45,8 +81,8 @@ if(CADACOMB_BUILD_TESTS)
     find_package(Catch2 REQUIRED)
 
     set(Test_Source_Files
-        "Source/Library/testMain.cpp"
-        ${Source_Files}
+        "Source/testMain.cpp"
+        ${ALL_FILES}
     )
     add_executable(CADacombTest ${Test_Source_Files})
     set_property(TARGET CADacombTest PROPERTY CXX_STANDARD 20)
@@ -57,6 +93,7 @@ if(CADACOMB_BUILD_TESTS)
     )
     target_include_directories(CADacombTest PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        ${CMAKE_CURRENT_SOURCE_DIR}/Source/Triangle
     )
     set_property(TARGET CADacombTest PROPERTY COMPILE_DEFINITIONS ISTESTPROJECT=1)
 
