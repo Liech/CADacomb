@@ -7,7 +7,7 @@ option(CADACOMB_BUILD_TESTS "Build test executables" ON)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-add_subdirectory(Library)
+add_subdirectory(CADacomb)
 
 if(CADACOMB_BUILD_RENDER)
     add_subdirectory(CADacombRender)

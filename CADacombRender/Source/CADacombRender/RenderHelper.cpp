@@ -1,12 +1,15 @@
 #include "RenderHelper.h"
 
-RenderHelper::RenderHelper() {}
-
-RenderHelper::~RenderHelper() {}
-
-std::string RenderHelper::name() const
+namespace CADacomb::Render
 {
-    return "CADacombRender";
+    RenderHelper::RenderHelper() {}
+
+    RenderHelper::~RenderHelper() {}
+
+    std::string RenderHelper::name() const
+    {
+        return "CADacombRender";
+    }
 }
 
 #ifdef ISTESTPROJECT
@@ -14,7 +17,7 @@ std::string RenderHelper::name() const
 
 TEST_CASE("RenderHelper/Initialization")
 {
-    RenderHelper helper;
+    CADacomb::Render::RenderHelper helper;
     REQUIRE(helper.name() == "CADacombRender");
 }
 #endif

@@ -5,7 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <vector>
 
-namespace Library
+namespace CADacomb::Render
 {
     TEST_CASE("VulcantFragmentationBuffer/PackageManagementAndDefragmentation", "[VulcantFragmentationBuffer]")
     {

@@ -9,7 +9,7 @@
 #include <memory>
 #include <span>
 
-namespace Library
+namespace CADacomb::Render
 {
     template<typename T>
     class VulcantFragmentationBuffer
@@ -31,7 +31,7 @@ namespace Library
       private:
         std::unique_ptr<Vulcant::VulcantBuffer> createGPUBuffer(size_t count);
 
-        Binary::DefragmentationBuffer<T>        cpuBuffer;
+        CADacomb::DefragmentationBuffer<T>      cpuBuffer;
         std::unique_ptr<Vulcant::VulcantBuffer> gpuBuffer;
         Vulcant::VulcantDevice&                 device;
         size_t                                  capacity   = 0;

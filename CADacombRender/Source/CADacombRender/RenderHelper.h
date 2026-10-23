@@ -2,11 +2,14 @@
 
 #include <string>
 
-class RenderHelper
+namespace CADacomb::Render
 {
-  public:
-    RenderHelper();
-    virtual ~RenderHelper();
+    class RenderHelper
+    {
+      public:
+        RenderHelper();
+        virtual ~RenderHelper();
 
-    std::string name() const;
-};
+        std::string name() const;
+    };
+}
