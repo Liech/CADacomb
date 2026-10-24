@@ -2,6 +2,8 @@
 
 #include "SmPyError.h"
 #include "SolidSm.h"
+#include "StepReaderSm.h"
+#include "StepWriterSm.h"
 #include "ext_shared.h"
 #include "tessellate.h"
 #include <SmApiBrep.h>
@@ -149,10 +151,15 @@ namespace CADacomb::CAD
 
     std::vector<std::unique_ptr<Shape>> KernelSm::loadStepFile(const std::string& filePath) const
     {
-        return std::vector<std::unique_ptr<Shape>>();
+        StepReaderSm reader;
+        return reader.loadFile(filePath);
     }
 
-    void KernelSm::saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName) const {}
+    void KernelSm::saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName) const
+    {
+        StepWriterSm writer;
+        writer.writeShape(shape, filePath, productName);
+    }
 
     SmBrep* KernelSm::copyBrepFromShape(const Shape& shape) const
     {
@@ -170,6 +177,7 @@ namespace CADacomb::CAD
 #ifdef ISTESTPROJECT
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <filesystem>
 
 TEST_CASE("KernelSm/CreateBoxWithHoleAndTessellate")
 {
@@ -281,5 +289,51 @@ TEST_CASE("KernelSm/SubshapeHierarchyTraversal")
     REQUIRE(cylinderCount >= 1);
     REQUIRE(innerWireCount == 2);
     REQUIRE(totalFaceArea == Catch::Approx(resultSolid.getSurfaceArea()).epsilon(1e-3));
+}
+
+TEST_CASE("KernelSm/StepExportAndImportRoundTrip")
+{
+    CADacomb::CAD::KernelSm kernel;
+
+    std::unique_ptr<CADacomb::CAD::Solid> box      = kernel.createBox(glm::dvec3(-30.0, -20.0, -10.0), glm::dvec3(60.0, 40.0, 20.0));
+    std::unique_ptr<CADacomb::CAD::Solid> cylinder = kernel.createCylinder(glm::dvec3(0.0, 0.0, -15.0), 10.0, 30.0);
+    std::unique_ptr<CADacomb::CAD::Shape> original = kernel.booleanDifference(*box, *cylinder);
+
+    const CADacomb::CAD::Solid& originalSolid = dynamic_cast<const CADacomb::CAD::Solid&>(*original);
+    double                      originalVol   = originalSolid.getVolume();
+    double                      originalArea  = originalSolid.getSurfaceArea();
+
+    std::string tempStepPath = (std::filesystem::temp_directory_path() / "cadacomb_roundtrip_test.step").string();
+    kernel.saveStepFile(*original, tempStepPath, "BoxWithHole");
+
+    std::vector<std::unique_ptr<CADacomb::CAD::Shape>> loadedShapes = kernel.loadStepFile(tempStepPath);
+    std::filesystem::remove(tempStepPath);
+
+    REQUIRE(loadedShapes.size() == 1);
+    REQUIRE(loadedShapes[0] != nullptr);
+    REQUIRE(loadedShapes[0]->getShapeType() == CADacomb::CAD::ShapeType::Solid);
+
+    const CADacomb::CAD::Solid& loadedSolid = dynamic_cast<const CADacomb::CAD::Solid&>(*loadedShapes[0]);
+    REQUIRE(loadedSolid.getName() == "BoxWithHole");
+    REQUIRE(loadedSolid.isManifold());
+    REQUIRE(loadedSolid.getVolume() == Catch::Approx(originalVol).epsilon(1e-3));
+    REQUIRE(loadedSolid.getSurfaceArea() == Catch::Approx(originalArea).epsilon(1e-3));
+
+    CADacomb::AABB3 bounds = loadedSolid.getAABB();
+    REQUIRE(bounds.getMin().x == Catch::Approx(-30.0).margin(1e-3));
+    REQUIRE(bounds.getMin().y == Catch::Approx(-20.0).margin(1e-3));
+    REQUIRE(bounds.getMin().z == Catch::Approx(-10.0).margin(1e-3));
+    REQUIRE(bounds.getMax().x == Catch::Approx(30.0).margin(1e-3));
+    REQUIRE(bounds.getMax().y == Catch::Approx(20.0).margin(1e-3));
+    REQUIRE(bounds.getMax().z == Catch::Approx(10.0).margin(1e-3));
+
+    CADacomb::CAD::TessellationOptions options;
+    options.setChordHeightTolerance(0.05);
+    options.setSurfaceAngleToleranceDeg(15.0);
+
+    std::unique_ptr<CADacomb::Triangulation> mesh = kernel.tessellate(*loadedShapes[0], options);
+    REQUIRE(mesh != nullptr);
+    REQUIRE(!mesh->vertices.empty());
+    REQUIRE(!mesh->indices.empty());
 }
 #endif

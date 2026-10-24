@@ -64,12 +64,33 @@ set(CAD_Sm_Files
     "Source/CADacomb/CAD/Sm/ShellSm.cpp"
     "Source/CADacomb/CAD/Sm/SolidSm.h"
     "Source/CADacomb/CAD/Sm/SolidSm.cpp"
+    "Source/CADacomb/CAD/Sm/StepLoopEntrySm.h"
+    "Source/CADacomb/CAD/Sm/StepLoopEntrySm.cpp"
+    "Source/CADacomb/CAD/Sm/StepReaderSm.h"
+    "Source/CADacomb/CAD/Sm/StepReaderSm.cpp"
+    "Source/CADacomb/CAD/Sm/StepWriterSm.h"
+    "Source/CADacomb/CAD/Sm/StepWriterSm.cpp"
     "Source/CADacomb/CAD/Sm/VertexSm.h"
     "Source/CADacomb/CAD/Sm/VertexSm.cpp"
     "Source/CADacomb/CAD/Sm/WireSm.h"
     "Source/CADacomb/CAD/Sm/WireSm.cpp"
 )
 source_group("Source/CAD/Sm" FILES ${CAD_Sm_Files})
+
+set(CAD_Step_Files
+    "Source/CADacomb/CAD/Step/StepArgument.h"
+    "Source/CADacomb/CAD/Step/StepArgument.cpp"
+    "Source/CADacomb/CAD/Step/StepArgumentType.h"
+    "Source/CADacomb/CAD/Step/StepDocument.h"
+    "Source/CADacomb/CAD/Step/StepDocument.cpp"
+    "Source/CADacomb/CAD/Step/StepEntityBuffer.h"
+    "Source/CADacomb/CAD/Step/StepEntityBuffer.cpp"
+    "Source/CADacomb/CAD/Step/StepParser.h"
+    "Source/CADacomb/CAD/Step/StepParser.cpp"
+    "Source/CADacomb/CAD/Step/StepSurfaceNormalInfo.h"
+    "Source/CADacomb/CAD/Step/StepSurfaceNormalInfo.cpp"
+)
+source_group("Source/CAD/Step" FILES ${CAD_Step_Files})
 
 set(Triangle_Files
     "Source/CADacomb/Triangle/BaseShapeGenerator.h"
@@ -221,6 +242,7 @@ set(ALL_FILES
     ${Binary_Files}
     ${CAD_Interface_Files}
     ${CAD_Sm_Files}
+    ${CAD_Step_Files}
     ${Triangle_Files}
     ${Triangle_HalfEdge_Files}
     ${Triangle_Util_Files}
