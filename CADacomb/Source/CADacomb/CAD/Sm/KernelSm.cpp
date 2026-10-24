@@ -336,4 +336,105 @@ TEST_CASE("KernelSm/StepExportAndImportRoundTrip")
     REQUIRE(!mesh->vertices.empty());
     REQUIRE(!mesh->indices.empty());
 }
+
+TEST_CASE("KernelSm/ShapeTransformations")
+{
+    CADacomb::CAD::KernelSm kernel;
+
+    std::unique_ptr<CADacomb::CAD::Solid> box = kernel.createBox(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(10.0, 20.0, 30.0));
+    REQUIRE(box != nullptr);
+
+    glm::dvec3 initialCenter = box->getCenterOfMass();
+    REQUIRE(initialCenter.x == Catch::Approx(5.0).margin(1e-3));
+    REQUIRE(initialCenter.y == Catch::Approx(10.0).margin(1e-3));
+    REQUIRE(initialCenter.z == Catch::Approx(15.0).margin(1e-3));
+
+    box->translate(glm::dvec3(10.0, 20.0, 30.0));
+    glm::dvec3 translatedCenter = box->getCenterOfMass();
+    REQUIRE(translatedCenter.x == Catch::Approx(15.0).margin(1e-3));
+    REQUIRE(translatedCenter.y == Catch::Approx(30.0).margin(1e-3));
+    REQUIRE(translatedCenter.z == Catch::Approx(45.0).margin(1e-3));
+
+    CADacomb::AABB3 translatedBounds = box->getAABB();
+    REQUIRE(translatedBounds.getMin().x == Catch::Approx(10.0).margin(1e-3));
+    REQUIRE(translatedBounds.getMin().y == Catch::Approx(20.0).margin(1e-3));
+    REQUIRE(translatedBounds.getMin().z == Catch::Approx(30.0).margin(1e-3));
+    REQUIRE(translatedBounds.getMax().x == Catch::Approx(20.0).margin(1e-3));
+    REQUIRE(translatedBounds.getMax().y == Catch::Approx(40.0).margin(1e-3));
+    REQUIRE(translatedBounds.getMax().z == Catch::Approx(60.0).margin(1e-3));
+
+    double originalVolume = box->getVolume();
+    box->scale(translatedCenter, 2.0);
+    REQUIRE(box->getVolume() == Catch::Approx(originalVolume * 8.0).epsilon(1e-3));
+
+    glm::dvec3 scaledCenter = box->getCenterOfMass();
+    REQUIRE(scaledCenter.x == Catch::Approx(15.0).margin(1e-3));
+    REQUIRE(scaledCenter.y == Catch::Approx(30.0).margin(1e-3));
+    REQUIRE(scaledCenter.z == Catch::Approx(45.0).margin(1e-3));
+
+    box->rotate(scaledCenter, glm::dvec3(0.0, 0.0, 1.0), glm::radians(90.0));
+    glm::dvec3 rotatedCenter = box->getCenterOfMass();
+    REQUIRE(rotatedCenter.x == Catch::Approx(15.0).margin(1e-3));
+    REQUIRE(rotatedCenter.y == Catch::Approx(30.0).margin(1e-3));
+    REQUIRE(rotatedCenter.z == Catch::Approx(45.0).margin(1e-3));
+}
+
+TEST_CASE("KernelSm/GeometricEvaluations")
+{
+    CADacomb::CAD::KernelSm kernel;
+
+    std::unique_ptr<CADacomb::CAD::Solid> cylinder = kernel.createCylinder(glm::dvec3(0.0, 0.0, 0.0), 5.0, 20.0);
+    REQUIRE(cylinder != nullptr);
+
+    std::vector<std::unique_ptr<CADacomb::CAD::Shell>> shells = cylinder->getShells();
+    REQUIRE(!shells.empty());
+
+    std::vector<std::unique_ptr<CADacomb::CAD::Face>> faces = shells[0]->getFaces();
+    REQUIRE(!faces.empty());
+
+    for (size_t faceIndex = 0; faceIndex < faces.size(); faceIndex++)
+    {
+        const CADacomb::CAD::Face&        face     = *faces[faceIndex];
+        std::pair<glm::dvec2, glm::dvec2> uvBounds = face.getUVBounds();
+        REQUIRE(uvBounds.first.x <= uvBounds.second.x);
+        REQUIRE(uvBounds.first.y <= uvBounds.second.y);
+
+        double midU = 0.5 * (uvBounds.first.x + uvBounds.second.x);
+        double midV = 0.5 * (uvBounds.first.y + uvBounds.second.y);
+
+        glm::dvec3      surfacePoint = face.evaluatePoint(midU, midV);
+        CADacomb::AABB3 solidBounds  = cylinder->getAABB();
+        REQUIRE(solidBounds.contains(surfacePoint));
+
+        glm::dvec3 normal = face.evaluateNormal(midU, midV);
+        REQUIRE(glm::length(normal) == Catch::Approx(1.0).margin(1e-3));
+
+        std::pair<glm::dvec3, glm::dvec3> tangents = face.evaluateTangents(midU, midV);
+        REQUIRE(glm::length(tangents.first) > 0.0);
+        REQUIRE(glm::length(tangents.second) > 0.0);
+
+        std::vector<std::unique_ptr<CADacomb::CAD::Wire>> wires = face.getWires();
+        for (size_t wireIndex = 0; wireIndex < wires.size(); wireIndex++)
+        {
+            std::vector<std::unique_ptr<CADacomb::CAD::Edge>> edges = wires[wireIndex]->getEdges();
+            for (size_t edgeIndex = 0; edgeIndex < edges.size(); edgeIndex++)
+            {
+                const CADacomb::CAD::Edge& edge = *edges[edgeIndex];
+                REQUIRE(edge.getLength() > 0.0);
+
+                std::pair<double, double> range = edge.getParameterRange();
+                REQUIRE(range.first < range.second);
+
+                glm::dvec3 startPoint = edge.evaluatePoint(range.first);
+                glm::dvec3 endPoint   = edge.evaluatePoint(range.second);
+                REQUIRE(edge.getStart() != nullptr);
+                REQUIRE(edge.getEnd() != nullptr);
+
+                double     midParam = 0.5 * (range.first + range.second);
+                glm::dvec3 tangent  = edge.evaluateTangent(midParam);
+                REQUIRE(glm::length(tangent) == Catch::Approx(1.0).margin(1e-3));
+            }
+        }
+    }
+}
 #endif

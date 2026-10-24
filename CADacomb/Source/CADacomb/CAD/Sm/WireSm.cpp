@@ -1,5 +1,6 @@
 #include "WireSm.h"
 
+#include "BrepTransformSm.h"
 #include "EdgeSm.h"
 #include "SmPyError.h"
 #include <SmEdgeuse.h>
@@ -32,6 +33,26 @@ namespace CADacomb::CAD
         SmPoint3d minCorner = box.GetMin();
         SmPoint3d maxCorner = box.GetMax();
         return AABB3(glm::dvec3(minCorner.x, minCorner.y, minCorner.z), glm::dvec3(maxCorner.x, maxCorner.y, maxCorner.z));
+    }
+
+    void WireSm::transform(const glm::dmat4& transformationMatrix)
+    {
+        BrepTransformSm::transform(brep.get(), transformationMatrix);
+    }
+
+    void WireSm::translate(const glm::dvec3& translationVector)
+    {
+        BrepTransformSm::translate(brep.get(), translationVector);
+    }
+
+    void WireSm::rotate(const glm::dvec3& axisOrigin, const glm::dvec3& axisDirection, double angleRadians)
+    {
+        BrepTransformSm::rotate(brep.get(), axisOrigin, axisDirection, angleRadians);
+    }
+
+    void WireSm::scale(const glm::dvec3& centerPoint, double scaleFactor)
+    {
+        BrepTransformSm::scale(brep.get(), centerPoint, scaleFactor);
     }
 
     bool WireSm::isClosed() const

@@ -50,6 +50,8 @@ set(CAD_Interface_Files
 source_group("Source/CAD/Interface" FILES ${CAD_Interface_Files})
 
 set(CAD_Sm_Files
+    "Source/CADacomb/CAD/Sm/BrepTransformSm.h"
+    "Source/CADacomb/CAD/Sm/BrepTransformSm.cpp"
     "Source/CADacomb/CAD/Sm/CompoundSm.h"
     "Source/CADacomb/CAD/Sm/CompoundSm.cpp"
     "Source/CADacomb/CAD/Sm/CompSolidSm.h"

@@ -1,5 +1,6 @@
 #include "SolidSm.h"
 
+#include "BrepTransformSm.h"
 #include "ShellSm.h"
 #include "SmPyError.h"
 #include "ext_shared.h"
@@ -40,6 +41,26 @@ namespace CADacomb::CAD
         return AABB3(glm::dvec3(minCorner.x, minCorner.y, minCorner.z), glm::dvec3(maxCorner.x, maxCorner.y, maxCorner.z));
     }
 
+    void SolidSm::transform(const glm::dmat4& transformationMatrix)
+    {
+        BrepTransformSm::transform(brep.get(), transformationMatrix);
+    }
+
+    void SolidSm::translate(const glm::dvec3& translationVector)
+    {
+        BrepTransformSm::translate(brep.get(), translationVector);
+    }
+
+    void SolidSm::rotate(const glm::dvec3& axisOrigin, const glm::dvec3& axisDirection, double angleRadians)
+    {
+        BrepTransformSm::rotate(brep.get(), axisOrigin, axisDirection, angleRadians);
+    }
+
+    void SolidSm::scale(const glm::dvec3& centerPoint, double scaleFactor)
+    {
+        BrepTransformSm::scale(brep.get(), centerPoint, scaleFactor);
+    }
+
     std::string SolidSm::getName() const
     {
         return name;
@@ -71,6 +92,22 @@ namespace CADacomb::CAD
     {
         smlibpy::BrepMeasure measure = smlibpy::brep_measure(brep.get(), 1e-7);
         return measure.area;
+    }
+
+    glm::dvec3 SolidSm::getCenterOfMass() const
+    {
+        double     area   = 0.0;
+        double     volume = 0.0;
+        double     mass   = 0.0;
+        SmPoint3d  centroid;
+        SmVector3d momentsOfInertia;
+        SmVector3d productsOfInertia;
+        SmStatus   status = SmApiBrepComputeMassProperties(brep.get(), 1e-2, 1.0, SmPoint3d(0.0, 0.0, 0.0), area, volume, mass, centroid, momentsOfInertia, productsOfInertia);
+        if (status != SM_SUCCESS)
+        {
+            SmPyRaise(status, "SmApiBrepComputeMassProperties", __FILE__, __LINE__);
+        }
+        return glm::dvec3(centroid.x, centroid.y, centroid.z);
     }
 
     std::vector<std::unique_ptr<Shell>> SolidSm::getShells() const

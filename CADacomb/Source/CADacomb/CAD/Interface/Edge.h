@@ -19,5 +19,10 @@ namespace CADacomb::CAD
 
         virtual std::unique_ptr<Vertex> getStart() const = 0;
         virtual std::unique_ptr<Vertex> getEnd() const   = 0;
+
+        virtual double                    getLength() const                       = 0;
+        virtual std::pair<double, double> getParameterRange() const               = 0;
+        virtual glm::dvec3                evaluatePoint(double parameter) const   = 0;
+        virtual glm::dvec3                evaluateTangent(double parameter) const = 0;
     };
 }

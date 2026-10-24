@@ -2,6 +2,7 @@
 
 #include "Shape.h"
 #include "Shell.h"
+#include <glm/glm.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -19,6 +20,7 @@ namespace CADacomb::CAD
         virtual bool        isManifold() const               = 0;
         virtual double      getVolume() const                = 0;
         virtual double      getSurfaceArea() const           = 0;
+        virtual glm::dvec3  getCenterOfMass() const          = 0;
 
         virtual std::vector<std::unique_ptr<Shell>> getShells() const = 0;
     };

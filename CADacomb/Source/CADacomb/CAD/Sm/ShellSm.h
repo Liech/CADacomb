@@ -17,6 +17,11 @@ namespace CADacomb::CAD
         ShapeType getShapeType() const override;
         AABB3     getAABB() const override;
 
+        void transform(const glm::dmat4& transformationMatrix) override;
+        void translate(const glm::dvec3& translationVector) override;
+        void rotate(const glm::dvec3& axisOrigin, const glm::dvec3& axisDirection, double angleRadians) override;
+        void scale(const glm::dvec3& centerPoint, double scaleFactor) override;
+
         bool isClosed() const override;
 
         std::vector<std::unique_ptr<Face>>  getFaces() const override;

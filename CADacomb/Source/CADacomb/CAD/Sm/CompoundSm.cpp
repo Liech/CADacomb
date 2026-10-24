@@ -1,5 +1,6 @@
 #include "CompoundSm.h"
 
+#include "BrepTransformSm.h"
 #include "SolidSm.h"
 #include <algorithm>
 
@@ -33,6 +34,38 @@ namespace CADacomb::CAD
             combinedBounds         = AABB3(minCorner, maxCorner);
         }
         return combinedBounds;
+    }
+
+    void CompoundSm::transform(const glm::dmat4& transformationMatrix)
+    {
+        for (size_t index = 0; index < breps.size(); index++)
+        {
+            BrepTransformSm::transform(breps[index].get(), transformationMatrix);
+        }
+    }
+
+    void CompoundSm::translate(const glm::dvec3& translationVector)
+    {
+        for (size_t index = 0; index < breps.size(); index++)
+        {
+            BrepTransformSm::translate(breps[index].get(), translationVector);
+        }
+    }
+
+    void CompoundSm::rotate(const glm::dvec3& axisOrigin, const glm::dvec3& axisDirection, double angleRadians)
+    {
+        for (size_t index = 0; index < breps.size(); index++)
+        {
+            BrepTransformSm::rotate(breps[index].get(), axisOrigin, axisDirection, angleRadians);
+        }
+    }
+
+    void CompoundSm::scale(const glm::dvec3& centerPoint, double scaleFactor)
+    {
+        for (size_t index = 0; index < breps.size(); index++)
+        {
+            BrepTransformSm::scale(breps[index].get(), centerPoint, scaleFactor);
+        }
     }
 
     std::vector<std::unique_ptr<Shape>> CompoundSm::getShapes() const
