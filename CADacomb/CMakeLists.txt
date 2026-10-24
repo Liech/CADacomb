@@ -49,13 +49,27 @@ set(CAD_Interface_Files
 )
 source_group("Source/CAD/Interface" FILES ${CAD_Interface_Files})
 
-set(CAD_Smlib_Files
-    "Source/CADacomb/CAD/Smlib/SmlibKernel.h"
-    "Source/CADacomb/CAD/Smlib/SmlibKernel.cpp"
-    "Source/CADacomb/CAD/Smlib/SmlibSolid.h"
-    "Source/CADacomb/CAD/Smlib/SmlibSolid.cpp"
+set(CAD_Sm_Files
+    "Source/CADacomb/CAD/Sm/CompoundSm.h"
+    "Source/CADacomb/CAD/Sm/CompoundSm.cpp"
+    "Source/CADacomb/CAD/Sm/CompSolidSm.h"
+    "Source/CADacomb/CAD/Sm/CompSolidSm.cpp"
+    "Source/CADacomb/CAD/Sm/EdgeSm.h"
+    "Source/CADacomb/CAD/Sm/EdgeSm.cpp"
+    "Source/CADacomb/CAD/Sm/FaceSm.h"
+    "Source/CADacomb/CAD/Sm/FaceSm.cpp"
+    "Source/CADacomb/CAD/Sm/KernelSm.h"
+    "Source/CADacomb/CAD/Sm/KernelSm.cpp"
+    "Source/CADacomb/CAD/Sm/ShellSm.h"
+    "Source/CADacomb/CAD/Sm/ShellSm.cpp"
+    "Source/CADacomb/CAD/Sm/SolidSm.h"
+    "Source/CADacomb/CAD/Sm/SolidSm.cpp"
+    "Source/CADacomb/CAD/Sm/VertexSm.h"
+    "Source/CADacomb/CAD/Sm/VertexSm.cpp"
+    "Source/CADacomb/CAD/Sm/WireSm.h"
+    "Source/CADacomb/CAD/Sm/WireSm.cpp"
 )
-source_group("Source/CAD/Smlib" FILES ${CAD_Smlib_Files})
+source_group("Source/CAD/Sm" FILES ${CAD_Sm_Files})
 
 set(Triangle_Files
     "Source/CADacomb/Triangle/BaseShapeGenerator.h"
@@ -206,7 +220,7 @@ source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
 set(ALL_FILES
     ${Binary_Files}
     ${CAD_Interface_Files}
-    ${CAD_Smlib_Files}
+    ${CAD_Sm_Files}
     ${Triangle_Files}
     ${Triangle_HalfEdge_Files}
     ${Triangle_Util_Files}

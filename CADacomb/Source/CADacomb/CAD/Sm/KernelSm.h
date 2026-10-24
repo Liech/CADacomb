@@ -6,11 +6,11 @@ class SmBrep;
 
 namespace CADacomb::CAD
 {
-    class SmlibKernel : public Kernel
+    class KernelSm : public Kernel
     {
       public:
-        SmlibKernel();
-        virtual ~SmlibKernel();
+        KernelSm();
+        virtual ~KernelSm();
 
         std::unique_ptr<Solid> createBox(const glm::dvec3& minCorner, const glm::dvec3& dimensions) const override;
         std::unique_ptr<Solid> createCylinder(const glm::dvec3& baseCenter, double radius, double height) const override;
