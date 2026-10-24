@@ -18,6 +18,36 @@ set(Binary_Files
 )
 source_group("Source/Util/Binary" FILES ${Binary_Files})
 
+set(CAD_Interface_Files
+    "Source/CADacomb/CAD/Interface/Compound.h"
+    "Source/CADacomb/CAD/Interface/Compound.cpp"
+    "Source/CADacomb/CAD/Interface/CompSolid.h"
+    "Source/CADacomb/CAD/Interface/CompSolid.cpp"
+    "Source/CADacomb/CAD/Interface/CurveType.h"
+    "Source/CADacomb/CAD/Interface/Edge.h"
+    "Source/CADacomb/CAD/Interface/Edge.cpp"
+    "Source/CADacomb/CAD/Interface/Face.h"
+    "Source/CADacomb/CAD/Interface/Face.cpp"
+    "Source/CADacomb/CAD/Interface/Kernel.h"
+    "Source/CADacomb/CAD/Interface/Kernel.cpp"
+    "Source/CADacomb/CAD/Interface/Orientation.h"
+    "Source/CADacomb/CAD/Interface/Shape.h"
+    "Source/CADacomb/CAD/Interface/Shape.cpp"
+    "Source/CADacomb/CAD/Interface/ShapeType.h"
+    "Source/CADacomb/CAD/Interface/Shell.h"
+    "Source/CADacomb/CAD/Interface/Shell.cpp"
+    "Source/CADacomb/CAD/Interface/Solid.h"
+    "Source/CADacomb/CAD/Interface/Solid.cpp"
+    "Source/CADacomb/CAD/Interface/SurfaceType.h"
+    "Source/CADacomb/CAD/Interface/TessellationOptions.h"
+    "Source/CADacomb/CAD/Interface/TessellationOptions.cpp"
+    "Source/CADacomb/CAD/Interface/Vertex.h"
+    "Source/CADacomb/CAD/Interface/Vertex.cpp"
+    "Source/CADacomb/CAD/Interface/Wire.h"
+    "Source/CADacomb/CAD/Interface/Wire.cpp"
+)
+source_group("Source/CAD/Interface" FILES ${CAD_Interface_Files})
+
 set(Triangle_Files
     "Source/CADacomb/Triangle/BaseShapeGenerator.h"
     "Source/CADacomb/Triangle/BaseShapeGenerator.cpp"
@@ -166,6 +196,7 @@ source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
 
 set(ALL_FILES
     ${Binary_Files}
+    ${CAD_Interface_Files}
     ${Triangle_Files}
     ${Triangle_HalfEdge_Files}
     ${Triangle_Util_Files}
