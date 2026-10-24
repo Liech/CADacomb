@@ -1,4 +1,4 @@
-﻿#include "BaseShapeGenerator.h"
+#include "BaseShapeGenerator.h"
 
 namespace CADacomb
 {
@@ -201,7 +201,7 @@ namespace CADacomb
 }
 
 #ifdef ISTESTPROJECT
-#include "HalfEdge/HalfEdgeHealth.h"
+#include "CADacomb/Triangle/HalfEdge/HalfEdgeHealth.h"
 #include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("BaseShapeGenerator/unitcube")

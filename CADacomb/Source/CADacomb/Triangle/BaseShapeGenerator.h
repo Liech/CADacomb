@@ -1,6 +1,6 @@
-﻿#pragma once
+#pragma once
 
-#include "Triangulation.h"
+#include "CADacomb/Triangle/Triangulation.h"
 
 namespace CADacomb
 {
