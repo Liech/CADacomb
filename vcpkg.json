@@ -4,6 +4,7 @@
   "dependencies": [
     "glm",
     "nlohmann-json",
+    "smlib",
     "catch2"
   ],
   "features": {

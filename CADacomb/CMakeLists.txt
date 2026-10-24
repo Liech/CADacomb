@@ -4,6 +4,7 @@ project(CADacomb)
 
 find_package(glm REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(smlib CONFIG REQUIRED)
 find_package(OpenMP)
 
 set(Binary_Files
@@ -47,6 +48,14 @@ set(CAD_Interface_Files
     "Source/CADacomb/CAD/Interface/Wire.cpp"
 )
 source_group("Source/CAD/Interface" FILES ${CAD_Interface_Files})
+
+set(CAD_Smlib_Files
+    "Source/CADacomb/CAD/Smlib/SmlibKernel.h"
+    "Source/CADacomb/CAD/Smlib/SmlibKernel.cpp"
+    "Source/CADacomb/CAD/Smlib/SmlibSolid.h"
+    "Source/CADacomb/CAD/Smlib/SmlibSolid.cpp"
+)
+source_group("Source/CAD/Smlib" FILES ${CAD_Smlib_Files})
 
 set(Triangle_Files
     "Source/CADacomb/Triangle/BaseShapeGenerator.h"
@@ -197,6 +206,7 @@ source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
 set(ALL_FILES
     ${Binary_Files}
     ${CAD_Interface_Files}
+    ${CAD_Smlib_Files}
     ${Triangle_Files}
     ${Triangle_HalfEdge_Files}
     ${Triangle_Util_Files}
@@ -219,6 +229,8 @@ set_property(TARGET CADacomb PROPERTY CXX_STANDARD 20)
 target_link_libraries(CADacomb PUBLIC 
     glm::glm
     nlohmann_json::nlohmann_json
+    smlib::sm_api
+    smlib::smlib
 )
 
 if(OpenMP_CXX_FOUND)
@@ -255,6 +267,8 @@ if(CADACOMB_BUILD_TESTS)
         Catch2::Catch2
         glm::glm
         nlohmann_json::nlohmann_json
+        smlib::sm_api
+        smlib::smlib
     )
     if(OpenMP_CXX_FOUND)
         target_link_libraries(CADacombTest PUBLIC OpenMP::OpenMP_CXX)

@@ -3,6 +3,7 @@
 include(CMakeFindDependencyMacro)
 find_dependency(glm REQUIRED)
 find_dependency(nlohmann_json REQUIRED)
+find_dependency(smlib REQUIRED)
 
 set(_CADacomb_has_render @CADACOMB_BUILD_RENDER@)
 if(_CADacomb_has_render)
