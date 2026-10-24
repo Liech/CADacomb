@@ -104,8 +104,31 @@ namespace CADacomb::CAD
     {
         double                                                                           lengthScale     = 1.0;
         const std::unordered_map<int, std::map<std::string, std::vector<StepArgument>>>& complexEntities = document.getComplexEntities();
+        std::set<int>                                                                    assignedUnitIds;
+
         for (std::unordered_map<int, std::map<std::string, std::vector<StepArgument>>>::const_iterator iterator = complexEntities.begin(); iterator != complexEntities.end(); iterator++)
         {
+            const std::map<std::string, std::vector<StepArgument>>&          parts        = iterator->second;
+            std::map<std::string, std::vector<StepArgument>>::const_iterator unitIterator = parts.find("GLOBAL_UNIT_ASSIGNED_CONTEXT");
+            if (unitIterator != parts.end() && !unitIterator->second.empty() && unitIterator->second[0].getType() == StepArgumentType::List)
+            {
+                const std::vector<StepArgument>& unitReferences = unitIterator->second[0].asList();
+                for (size_t index = 0; index < unitReferences.size(); index++)
+                {
+                    if (unitReferences[index].getType() == StepArgumentType::Reference)
+                    {
+                        assignedUnitIds.insert(unitReferences[index].asReference());
+                    }
+                }
+            }
+        }
+
+        for (std::unordered_map<int, std::map<std::string, std::vector<StepArgument>>>::const_iterator iterator = complexEntities.begin(); iterator != complexEntities.end(); iterator++)
+        {
+            if (!assignedUnitIds.empty() && assignedUnitIds.count(iterator->first) == 0)
+            {
+                continue;
+            }
             const std::map<std::string, std::vector<StepArgument>>&          parts      = iterator->second;
             std::map<std::string, std::vector<StepArgument>>::const_iterator siIterator = parts.find("SI_UNIT");
             if (siIterator != parts.end() && parts.count("LENGTH_UNIT") > 0 && !siIterator->second.empty())
