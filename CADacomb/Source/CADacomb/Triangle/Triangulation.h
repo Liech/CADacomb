@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <glm/glm.hpp>
 #include <map>
@@ -22,7 +22,9 @@ namespace CADacomb
         glm::dvec3                                               getFaceNormal(size_t faceIndex) const;
 
         void                                  saveAsSTL(const std::string& filename) const;
+        void                                  saveAsSTL(std::ostream& stream) const;
         static std::unique_ptr<Triangulation> fromSTLFile(const std::string& filename);
+        static std::unique_ptr<Triangulation> fromSTLStream(std::istream& stream);
         std::string                           toBase64() const;
         Triangulation                         fromBase64(const std::string& base64Str);
     };

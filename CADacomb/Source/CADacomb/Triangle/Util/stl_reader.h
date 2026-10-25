@@ -20,6 +20,10 @@
  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ Modifications:
+  - Added std::istream overloads (ReadStlStream, ReadStlStream_ASCII, ReadStlStream_BINARY, StlStreamHasASCIIFormat)
+    to support reading STL meshes directly from streams.
 */
 
 /** \file
@@ -224,6 +228,23 @@ namespace stl_reader
      * fail, of course.
      */
     inline bool StlFileHasASCIIFormat(const char* filename);
+
+    // =============================================================================
+    // MODIFICATIONS: Stream support overloads (CADacomb)
+    // =============================================================================
+
+    template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
+    bool ReadStlStream(std::istream& in, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut);
+
+    template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
+    bool ReadStlStream_ASCII(std::istream& in, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut);
+
+    template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
+    bool ReadStlStream_BINARY(std::istream& in, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut);
+
+    inline bool StlStreamHasASCIIFormat(std::istream& in);
+
+    // =============================================================================
 
     /// convenience mesh class which makes accessing the stl data more easy
     template<class TNumber = float, class TIndex = unsigned int>
@@ -547,11 +568,17 @@ namespace stl_reader
             return ReadStlFile_BINARY(filename, coordsOut, normalsOut, trisOut, solidRangesOut);
     }
 
+    // =============================================================================
+    // MODIFICATIONS: Stream support implementations (CADacomb)
+    // =============================================================================
+
     template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
-    bool ReadStlFile_ASCII(const char* filename, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
+    bool ReadStlStream_ASCII(std::istream& in, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
     {
         using namespace std;
         using namespace stl_reader_impl;
+
+        const char* filename = "stream";
 
         typedef typename TNumberContainer1::value_type number_t;
         typedef typename TIndexContainer1::value_type  index_t;
@@ -560,9 +587,6 @@ namespace stl_reader
         normalsOut.clear();
         trisOut.clear();
         solidRangesOut.clear();
-
-        ifstream in(filename);
-        STL_READER_COND_THROW(!in, "Couldn't open file " << filename);
 
         vector<CoordWithIndex<number_t, index_t>> coordsWithIndex;
 
@@ -650,10 +674,20 @@ namespace stl_reader
     }
 
     template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
-    bool ReadStlFile_BINARY(const char* filename, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
+    bool ReadStlFile_ASCII(const char* filename, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
+    {
+        std::ifstream in(filename);
+        STL_READER_COND_THROW(!in, "Couldn't open file " << filename);
+        return ReadStlStream_ASCII(in, coordsOut, normalsOut, trisOut, solidRangesOut);
+    }
+
+    template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
+    bool ReadStlStream_BINARY(std::istream& in, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
     {
         using namespace std;
         using namespace stl_reader_impl;
+
+        const char* filename = "stream";
 
         typedef typename TNumberContainer1::value_type number_t;
         typedef typename TIndexContainer1::value_type  index_t;
@@ -662,9 +696,6 @@ namespace stl_reader
         normalsOut.clear();
         trisOut.clear();
         solidRangesOut.clear();
-
-        ifstream in(filename, ios::binary);
-        STL_READER_COND_THROW(!in, "Couldnt open file " << filename);
 
         char stl_header[80];
         in.read(stl_header, 80);
@@ -711,17 +742,45 @@ namespace stl_reader
         return true;
     }
 
-    inline bool StlFileHasASCIIFormat(const char* filename)
+    template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
+    bool ReadStlFile_BINARY(const char* filename, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
+    {
+        std::ifstream in(filename, std::ios::binary);
+        STL_READER_COND_THROW(!in, "Couldnt open file " << filename);
+        return ReadStlStream_BINARY(in, coordsOut, normalsOut, trisOut, solidRangesOut);
+    }
+
+    inline bool StlStreamHasASCIIFormat(std::istream& in)
     {
         using namespace std;
-        ifstream in(filename);
-        STL_READER_COND_THROW(!in, "Couldnt open file " << filename);
-
-        char chars[256];
+        streampos startPos = in.tellg();
+        char      chars[256];
         in.read(chars, 256);
-        string buffer(chars, in.gcount());
+        streamsize bytesRead = in.gcount();
+        if (startPos != static_cast<streampos>(-1))
+        {
+            in.clear();
+            in.seekg(startPos);
+        }
+        string buffer(chars, static_cast<size_t>(bytesRead));
         transform(buffer.begin(), buffer.end(), buffer.begin(), ::tolower);
         return buffer.find("solid") != string::npos && buffer.find("\n") != string::npos && buffer.find("facet") != string::npos && buffer.find("normal") != string::npos;
+    }
+
+    inline bool StlFileHasASCIIFormat(const char* filename)
+    {
+        std::ifstream in(filename, std::ios::binary);
+        STL_READER_COND_THROW(!in, "Couldnt open file " << filename);
+        return StlStreamHasASCIIFormat(in);
+    }
+
+    template<class TNumberContainer1, class TNumberContainer2, class TIndexContainer1, class TIndexContainer2>
+    bool ReadStlStream(std::istream& in, TNumberContainer1& coordsOut, TNumberContainer2& normalsOut, TIndexContainer1& trisOut, TIndexContainer2& solidRangesOut)
+    {
+        if (StlStreamHasASCIIFormat(in))
+            return ReadStlStream_ASCII(in, coordsOut, normalsOut, trisOut, solidRangesOut);
+        else
+            return ReadStlStream_BINARY(in, coordsOut, normalsOut, trisOut, solidRangesOut);
     }
 
 } // end of namespace stl_reader
