@@ -12,6 +12,12 @@ set(Source_Files
     "Source/CADacombRender/RenderHelper.h"
     "Source/CADacombRender/VulcantFragmentationBuffer.cpp"
     "Source/CADacombRender/VulcantFragmentationBuffer.h"
+    "Source/CADacombRender/SceneDataConverter.cpp"
+    "Source/CADacombRender/SceneDataConverter.h"
+    "Source/CADacombRender/SVOLODChunk.cpp"
+    "Source/CADacombRender/SVOLODChunk.h"
+    "Source/CADacombRender/SVOLODMesh.cpp"
+    "Source/CADacombRender/SVOLODMesh.h"
 )
 source_group("Source" FILES ${Source_Files})
 
@@ -26,6 +32,7 @@ set_property(TARGET CADacombRender PROPERTY CXX_STANDARD 20)
 target_link_libraries(CADacombRender PUBLIC 
     CADacomb
     Vulcant::Vulcant
+    VulcantToolkit
     glm::glm
 )
 
@@ -59,6 +66,7 @@ if(CADACOMB_BUILD_TESTS)
     target_link_libraries(CADacombRenderTest PUBLIC 
         CADacomb
         Vulcant::Vulcant
+        VulcantToolkit
         Catch2::Catch2
         glm::glm
     )
@@ -70,5 +78,5 @@ if(CADACOMB_BUILD_TESTS)
 
     include(CTest)
     include(Catch)
-    catch_discover_tests(CADacombRenderTest)
+    catch_discover_tests(CADacombRenderTest DISCOVERY_MODE PRE_TEST)
 endif()

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20...3.30)
 project(CADacomb)
 
-option(CADACOMB_BUILD_RENDER "Build CADacombRender rendering helper module" OFF)
+option(CADACOMB_BUILD_RENDER "Build CADacombRender rendering helper module" ON)
 option(CADACOMB_BUILD_TESTS "Build test executables" ON)
 
 include(CMakePackageConfigHelpers)
