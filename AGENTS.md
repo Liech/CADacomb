@@ -9,6 +9,7 @@ Prefer to ask what to do next instead of tunnelvision fixing.
 * **As little comments as possible**: Code should be clean, concise, and self-explanatory.
 * Do not add obvious, redundant, or conversational comments.
 * Avoid boilerplate Doxygen/docstrings unless explicitly requested.
+* **Class description exception**: A very short class description (classical `//` comment) containing purpose and rules is permitted immediately above the class declaration.
 
 ## 2. Naming Conventions
 * **Variables**: Always use `camelCase`.
