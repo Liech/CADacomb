@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -31,6 +31,7 @@ namespace CADacomb
         SVO(uint32_t dimensionInput, const T& rootValue, const MergeStrategy<T>& strategy);
         SVO(const std::vector<T>& grid, uint32_t dimensionInput);
         SVO(const std::vector<T>& grid, uint32_t dimensionInput, const MergeStrategy<T>& strategy);
+        SVO(uint32_t dimensionInput, std::vector<SVONode<T>> nodesInput, std::vector<uint32_t> parentsInput, std::vector<uint32_t> freeBlocksInput, const MergeStrategy<T>& strategy);
         virtual ~SVO();
 
         std::string getType() override;
@@ -48,6 +49,8 @@ namespace CADacomb
         void                    setMergeStrategy(const MergeStrategy<T>& strategy);
 
         const std::vector<SVONode<T>>& getRaw() const;
+        const std::vector<uint32_t>&   getParents() const;
+        const std::vector<uint32_t>&   getFreeBlocks() const;
         uint32_t                       getDimension() const;
 
         template<typename Visitor>
@@ -144,6 +147,18 @@ namespace CADacomb
     }
 
     template<typename T>
+    SVO<T>::SVO(uint32_t dimensionInput, std::vector<SVONode<T>> nodesInput, std::vector<uint32_t> parentsInput, std::vector<uint32_t> freeBlocksInput, const MergeStrategy<T>& strategy)
+      : dimension(dimensionInput)
+      , nodes(std::move(nodesInput))
+      , parents(std::move(parentsInput))
+      , freeBlocks(std::move(freeBlocksInput))
+      , mergeStrategy(&strategy)
+    {
+        assert(dimension > 0 && (dimension & (dimension - 1)) == 0);
+        assert(mergeStrategy != nullptr);
+    }
+
+    template<typename T>
     SVO<T>::~SVO()
     {
     }
@@ -152,6 +167,18 @@ namespace CADacomb
     const std::vector<SVONode<T>>& SVO<T>::getRaw() const
     {
         return nodes;
+    }
+
+    template<typename T>
+    const std::vector<uint32_t>& SVO<T>::getParents() const
+    {
+        return parents;
+    }
+
+    template<typename T>
+    const std::vector<uint32_t>& SVO<T>::getFreeBlocks() const
+    {
+        return freeBlocks;
     }
 
     template<typename T>

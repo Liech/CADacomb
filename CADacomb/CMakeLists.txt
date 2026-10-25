@@ -157,6 +157,8 @@ source_group("Source/Volume/Flat" FILES ${Volume_Flat_Files})
 set(Volume_MergeStrategy_Files
     "Source/CADacomb/Volume/MergeStrategy/MergeStrategy.h"
     "Source/CADacomb/Volume/MergeStrategy/MergeStrategy.cpp"
+    "Source/CADacomb/Volume/MergeStrategy/MergeStrategyType.h"
+    "Source/CADacomb/Volume/MergeStrategy/MergeStrategyType.cpp"
     "Source/CADacomb/Volume/MergeStrategy/MeanMergeStrategy.h"
     "Source/CADacomb/Volume/MergeStrategy/MeanMergeStrategy.cpp"
     "Source/CADacomb/Volume/MergeStrategy/MostPrevalentMergeStrategy.h"
@@ -175,6 +177,8 @@ source_group("Source/Volume/Progress" FILES ${Volume_Progress_Files})
 set(Volume_SVO_Files
     "Source/CADacomb/Volume/SVO/AnySVO.h"
     "Source/CADacomb/Volume/SVO/AnySVO.cpp"
+    "Source/CADacomb/Volume/SVO/Datatype.h"
+    "Source/CADacomb/Volume/SVO/Datatype.cpp"
     "Source/CADacomb/Volume/SVO/SVONode.h"
     "Source/CADacomb/Volume/SVO/SVOResult.h"
     "Source/CADacomb/Volume/SVO/SVOResult.cpp"
@@ -186,6 +190,8 @@ set(Volume_SVO_Files
     "Source/CADacomb/Volume/SVO/BinaryVolumeToSVO.cpp"
     "Source/CADacomb/Volume/SVO/SVO.h"
     "Source/CADacomb/Volume/SVO/SVO.cpp"
+    "Source/CADacomb/Volume/SVO/SVOFile.h"
+    "Source/CADacomb/Volume/SVO/SVOFile.cpp"
     "Source/CADacomb/Volume/SVO/SVOVoxelizer.h"
     "Source/CADacomb/Volume/SVO/SVOVoxelizer.cpp"
 )
