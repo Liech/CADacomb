@@ -1,4 +1,4 @@
-﻿#include "SVOVoxelizer.h"
+#include "SVOVoxelizer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -65,9 +65,9 @@ namespace CADacomb
                         continue;
                     }
 
-                    double     rx       = (static_cast<double>(globalX) + 0.5) / static_cast<double>(dimension);
-                    double     ry       = (static_cast<double>(globalY) + 0.5) / static_cast<double>(dimension);
-                    glm::dvec3 rayStart = start + glm::dvec3(span.x * rx, span.y * ry, zMin) - rayDirection * 10.0;
+                    double     rx = (static_cast<double>(globalX) + 0.5) / static_cast<double>(dimension);
+                    double     ry = (static_cast<double>(globalY) + 0.5) / static_cast<double>(dimension);
+                    glm::dvec3 rayStart(start.x + span.x * rx, start.y + span.y * ry, zMin - 10.0);
 
                     intersections.clear();
                     for (size_t tri : tileTriangles)
@@ -261,6 +261,15 @@ namespace CADacomb
             long long xEndLL = static_cast<long long>(std::ceil(((outEnd.x - start.x) / span.x) * static_cast<double>(numTilesX)));
             long long yEndLL = static_cast<long long>(std::ceil(((outEnd.y - start.y) / span.y) * static_cast<double>(numTilesY)));
 
+            if (xEndLL <= xStartLL)
+            {
+                xEndLL = xStartLL + 1;
+            }
+            if (yEndLL <= yStartLL)
+            {
+                yEndLL = yStartLL + 1;
+            }
+
             xEndLL = std::min(static_cast<long long>(numTilesX), xEndLL);
             yEndLL = std::min(static_cast<long long>(numTilesY), yEndLL);
 
@@ -375,6 +384,35 @@ namespace CADacomb
         SVOVoxelizer voxelizer;
         glm::dvec3   start(0.0, 0.0, 0.0);
         glm::dvec3   end(1.0, 1.0, 1.0);
+        uint32_t     dimension = 32;
+
+        auto svo = voxelizer.voxelize(tri, start, end, dimension);
+
+        REQUIRE(svo != nullptr);
+        CHECK(svo->getDimension() == dimension);
+
+        for (size_t z = 2; z < 30; z++)
+        {
+            for (size_t y = 2; y < 30; y++)
+            {
+                for (size_t x = 2; x < 30; x++)
+                {
+                    CHECK(svo->getVoxel(glm::ivec3(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z))) == true);
+                }
+            }
+        }
+    }
+
+    TEST_CASE("SVOVoxelizer/UnitCubeOffset")
+    {
+        auto tri = CADacomb::BaseShapeGenerator::cube();
+        for (auto& v : tri.vertices)
+        {
+            v += glm::dvec3(50.0, 50.0, 338.0);
+        }
+        SVOVoxelizer voxelizer;
+        glm::dvec3   start(50.0, 50.0, 338.0);
+        glm::dvec3   end(51.0, 51.0, 339.0);
         uint32_t     dimension = 32;
 
         auto svo = voxelizer.voxelize(tri, start, end, dimension);

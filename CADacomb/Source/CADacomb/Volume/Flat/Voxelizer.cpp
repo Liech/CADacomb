@@ -1,4 +1,4 @@
-﻿#include "Voxelizer.h"
+#include "Voxelizer.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -100,9 +100,9 @@ namespace CADacomb
                     zMin = std::min(zMin, vertices[indices[tri + 2]].z);
                 }
 
-                double     rx       = (static_cast<double>(x) + 0.5) / static_cast<double>(resolution.x);
-                double     ry       = (static_cast<double>(y) + 0.5) / static_cast<double>(resolution.y);
-                glm::dvec3 rayStart = start + glm::dvec3(span.x * rx, span.y * ry, zMin) - rayDirection * 10.0;
+                double     rx = (static_cast<double>(x) + 0.5) / static_cast<double>(resolution.x);
+                double     ry = (static_cast<double>(y) + 0.5) / static_cast<double>(resolution.y);
+                glm::dvec3 rayStart(start.x + span.x * rx, start.y + span.y * ry, zMin - 10.0);
 
                 intersections.clear();
                 for (auto& tri : stack)
@@ -169,6 +169,15 @@ namespace CADacomb
 
             long long xEndLL = std::ceil(((outEnd.x - start.x) / span.x) * static_cast<double>(resolution.x));
             long long yEndLL = std::ceil(((outEnd.y - start.y) / span.y) * static_cast<double>(resolution.y));
+
+            if (xEndLL <= xStartLL)
+            {
+                xEndLL = xStartLL + 1;
+            }
+            if (yEndLL <= yStartLL)
+            {
+                yEndLL = yStartLL + 1;
+            }
 
             xEndLL = std::min(static_cast<long long>(resolution.x), xEndLL);
             yEndLL = std::min(static_cast<long long>(resolution.y), yEndLL);
@@ -309,5 +318,31 @@ TEST_CASE("Voxelizer/CubeWithHole16")
 
     CHECK(solidCount > 2000);
     CHECK(solidCount < 3500);
+}
+
+TEST_CASE("Voxelizer/CubeOffset")
+{
+    auto tri = CADacomb::BaseShapeGenerator::cube();
+    for (auto& v : tri.vertices)
+    {
+        v += glm::dvec3(50.0, 50.0, 338.0);
+    }
+    CADacomb::Voxelizer voxelizer;
+    glm::dvec3          start(50.0, 50.0, 338.0);
+    glm::dvec3          end(51.0, 51.0, 339.0);
+    glm::u64vec3        resolution(16, 16, 16);
+
+    auto volume = voxelizer.voxelize(tri.vertices, tri.indices, start, end, resolution);
+
+    REQUIRE(volume != nullptr);
+    size_t solidCount = 0;
+    for (size_t i = 0; i < volume->data.size(); i++)
+    {
+        if (volume->data[i])
+        {
+            solidCount++;
+        }
+    }
+    CHECK(solidCount > 0);
 }
 #endif
