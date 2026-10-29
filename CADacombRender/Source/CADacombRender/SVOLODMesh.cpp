@@ -36,7 +36,10 @@ namespace CADacomb::Render
         sceneData.cameraPos              = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
         CADacomb::FixedLODStrategy refineStrategy(CADacomb::LODDecision::Refine);
-        lodMesh.update(sceneData, refineStrategy);
+        while (lodMesh.getVertexCount() == 0 && lodMesh.getChunks()[0].getLOD() > 0)
+        {
+            lodMesh.update(sceneData, refineStrategy);
+        }
 
         CHECK(lodMesh.getVertexCount() > 0);
         size_t initialVertexCount = lodMesh.getVertexCount();
@@ -131,6 +134,23 @@ namespace CADacomb::Render
         CHECK(lodMesh.getChunks()[1].getLOD() == 3);
         CHECK(lodMesh.getChunks()[0].getPackageId() == chunk0PackageBefore);
         CHECK(lodMesh.getVertexCount() > 0);
+    }
+
+    TEST_CASE("SVOLODMesh/StartsAtCoarsestLODByDefault", "[SVOLODMesh]")
+    {
+        Vulcant::VulcantV::VulcantVDevice device({}, false);
+        CADacomb::SVO<bool>               svo(64, false);
+        CADacomb::AABB3                   volumeBounds(glm::dvec3(0.0), glm::dvec3(64.0));
+        SVOLODMesh<bool>                  lodMesh(device, svo, volumeBounds, 20000, 32);
+
+        for (const auto& chunk : lodMesh.getChunks())
+        {
+            CHECK(chunk.getLOD() == 5);
+        }
+        for (const auto& border : lodMesh.getBorderChunks())
+        {
+            CHECK(border.getLOD() == 5);
+        }
     }
 }
 #endif

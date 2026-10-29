@@ -126,3 +126,4 @@ Prefer to ask what to do next instead of tunnelvision fixing.
 ## 13. Misc
 * When adding a nullptr check, make sure the variable can be a nullptr in any circumstances
 * Do not add unecessary checks. Let it crash if it needs to crash.
+* Avoid defensive programming or checking for empty/valid values when variables should already be valid (e.g. do not check `if (guid.toString().empty())` before returning it). Keep code minimal and direct.

@@ -20,7 +20,7 @@ namespace CADacomb::Render
     class SVOLODMesh
     {
       public:
-        SVOLODMesh(Vulcant::VulcantDevice& device, CADacomb::SVO<T>& svo, const CADacomb::AABB3& volumeBounds, size_t vertexCapacity, uint32_t chunkSize = 32, int initialLOD = 0);
+        SVOLODMesh(Vulcant::VulcantDevice& device, CADacomb::SVO<T>& svo, const CADacomb::AABB3& volumeBounds, size_t vertexCapacity, uint32_t chunkSize = 32, int initialLOD = -1);
         virtual ~SVOLODMesh();
 
         void markDirty(const CADacomb::AABB3& dirtyBounds);
@@ -86,6 +86,8 @@ namespace CADacomb::Render
             maxLOD++;
         }
 
+        int startingLOD = (initialLOD < 0) ? maxLOD : std::clamp(initialLOD, 0, maxLOD);
+
         chunksPerDim = (dim + chunkSize - 1) / chunkSize;
         for (uint32_t z = 0; z < chunksPerDim; z++)
         {
@@ -97,7 +99,7 @@ namespace CADacomb::Render
                     glm::dvec3      chunkMin = volumeBounds.getMin() + glm::dvec3(minBound) * leafVoxelLength;
                     glm::dvec3      chunkMax = chunkMin + glm::dvec3(chunkSize) * leafVoxelLength;
                     CADacomb::AABB3 chunkBounds(chunkMin, chunkMax);
-                    chunks.emplace_back(minBound, chunkSize, chunkBounds, initialLOD);
+                    chunks.emplace_back(minBound, chunkSize, chunkBounds, startingLOD);
                 }
             }
         }
@@ -120,7 +122,7 @@ namespace CADacomb::Render
                     double          minZ   = volumeBounds.getMin().z + static_cast<double>(z) * worldChunkLen;
                     CADacomb::AABB3 bBounds(glm::dvec3(planeX, minY, minZ), glm::dvec3(planeX, minY + worldChunkLen, minZ + worldChunkLen));
 
-                    borderChunks.emplace_back(negMinBound, chunkSize, bBounds, initialLOD);
+                    borderChunks.emplace_back(negMinBound, chunkSize, bBounds, startingLOD);
                     borderLinks.push_back(BorderLink{
                       .chunkIndexA = (x > 0) ? static_cast<int>(getChunkIndex(x - 1, y, z)) : -1, .chunkIndexB = (x < chunksPerDim) ? static_cast<int>(getChunkIndex(x, y, z)) : -1, .axis = 0 });
                 }
@@ -139,7 +141,7 @@ namespace CADacomb::Render
                     double          minZ   = volumeBounds.getMin().z + static_cast<double>(z) * worldChunkLen;
                     CADacomb::AABB3 bBounds(glm::dvec3(minX, planeY, minZ), glm::dvec3(minX + worldChunkLen, planeY, minZ + worldChunkLen));
 
-                    borderChunks.emplace_back(negMinBound, chunkSize, bBounds, initialLOD);
+                    borderChunks.emplace_back(negMinBound, chunkSize, bBounds, startingLOD);
                     borderLinks.push_back(BorderLink{
                       .chunkIndexA = (y > 0) ? static_cast<int>(getChunkIndex(x, y - 1, z)) : -1, .chunkIndexB = (y < chunksPerDim) ? static_cast<int>(getChunkIndex(x, y, z)) : -1, .axis = 1 });
                 }
@@ -158,7 +160,7 @@ namespace CADacomb::Render
                     double          planeZ = volumeBounds.getMin().z + static_cast<double>(z) * worldChunkLen;
                     CADacomb::AABB3 bBounds(glm::dvec3(minX, minY, planeZ), glm::dvec3(minX + worldChunkLen, minY + worldChunkLen, planeZ));
 
-                    borderChunks.emplace_back(negMinBound, chunkSize, bBounds, initialLOD);
+                    borderChunks.emplace_back(negMinBound, chunkSize, bBounds, startingLOD);
                     borderLinks.push_back(BorderLink{
                       .chunkIndexA = (z > 0) ? static_cast<int>(getChunkIndex(x, y, z - 1)) : -1, .chunkIndexB = (z < chunksPerDim) ? static_cast<int>(getChunkIndex(x, y, z)) : -1, .axis = 2 });
                 }
@@ -334,8 +336,8 @@ namespace CADacomb::Render
 
         bool hasNeg = (link.chunkIndexA >= 0);
         bool hasPos = (link.chunkIndexB >= 0);
-        int  lodA   = hasNeg ? chunks[link.chunkIndexA].getLOD() : 0;
-        int  lodB   = hasPos ? chunks[link.chunkIndexB].getLOD() : 0;
+        int  lodA   = hasNeg ? chunks[link.chunkIndexA].getLOD() : maxLOD;
+        int  lodB   = hasPos ? chunks[link.chunkIndexB].getLOD() : maxLOD;
         if (!hasNeg)
         {
             lodA = lodB;

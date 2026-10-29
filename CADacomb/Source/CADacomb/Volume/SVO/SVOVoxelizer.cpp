@@ -1,5 +1,7 @@
 #include "SVOVoxelizer.h"
 
+#include "CADacomb/Util/ProgressBar.h"
+
 #include <algorithm>
 #include <cmath>
 
@@ -30,15 +32,23 @@ namespace CADacomb
         glm::dvec3        rayDirection(0.0, 0.0, 1.0);
         std::vector<bool> emptyVector;
 
-#pragma omp parallel for schedule(dynamic)
-        for (long long tileIdx = 0; tileIdx < static_cast<long long>(numTilesX * numTilesY); tileIdx++)
+        size_t      totalTiles = static_cast<size_t>(numTilesX * numTilesY);
+        ProgressBar voxelizeBar(totalTiles, "Voxelizing mesh tiles");
+
+#pragma omp parallel for schedule(dynamic) shared(voxelizeBar)
+        for (long long tileIdx = 0; tileIdx < static_cast<long long>(totalTiles); tileIdx++)
         {
+            if (voxelizeBar.isCanceled())
+            {
+                continue;
+            }
             size_t      tileX         = static_cast<size_t>(tileIdx % numTilesX);
             size_t      tileY         = static_cast<size_t>(tileIdx / numTilesX);
             const auto& tileTriangles = tileTriangleStack[tileIdx];
 
             if (tileTriangles.empty())
             {
+                voxelizeBar.addProgress(1);
                 continue;
             }
 
@@ -227,6 +237,8 @@ namespace CADacomb
                     onBlock(blockOffset, false, blockData);
                 }
             }
+
+            voxelizeBar.addProgress(1);
         }
     }
 
