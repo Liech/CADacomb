@@ -19,6 +19,14 @@ set(Binary_Files
 )
 source_group("Source/Util/Binary" FILES ${Binary_Files})
 
+set(Util_Files
+    "Source/CADacomb/Util/GUID.h"
+    "Source/CADacomb/Util/GUID.cpp"
+    "Source/CADacomb/Util/ProgressBar.h"
+    "Source/CADacomb/Util/ProgressBar.cpp"
+)
+source_group("Source/Util" FILES ${Util_Files})
+
 set(CAD_Interface_Files
     "Source/CADacomb/CAD/Interface/Compound.h"
     "Source/CADacomb/CAD/Interface/Compound.cpp"
@@ -168,12 +176,6 @@ set(Volume_MergeStrategy_Files
 )
 source_group("Source/Volume/MergeStrategy" FILES ${Volume_MergeStrategy_Files})
 
-set(Volume_Progress_Files
-    "Source/CADacomb/Volume/Progress/IProgressBar.h"
-    "Source/CADacomb/Volume/Progress/IProgressBar.cpp"
-)
-source_group("Source/Volume/Progress" FILES ${Volume_Progress_Files})
-
 set(Volume_SVO_Files
     "Source/CADacomb/Volume/SVO/AnySVO.h"
     "Source/CADacomb/Volume/SVO/AnySVO.cpp"
@@ -248,6 +250,7 @@ source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
 
 set(ALL_FILES
     ${Binary_Files}
+    ${Util_Files}
     ${CAD_Interface_Files}
     ${CAD_Sm_Files}
     ${CAD_Step_Files}
@@ -258,7 +261,6 @@ set(ALL_FILES
     ${Volume_BrickSVO_Files}
     ${Volume_Flat_Files}
     ${Volume_MergeStrategy_Files}
-    ${Volume_Progress_Files}
     ${Volume_SVO_Files}
     ${Volume_SVO_Blocky_Files}
     ${Volume_SVO_Generator_Files}

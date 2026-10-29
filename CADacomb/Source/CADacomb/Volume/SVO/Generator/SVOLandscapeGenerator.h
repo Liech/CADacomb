@@ -1,8 +1,8 @@
 ﻿#pragma once
 
+#include "CADacomb/Util/ProgressBar.h"
 #include "CADacomb/Volume/Flat/BinaryVolume.h"
 #include "CADacomb/Volume/MergeStrategy/MostPrevalentExceptMergeStrategy.h"
-#include "CADacomb/Volume/Progress/IProgressBar.h"
 #include "CADacomb/Volume/SVO/BinaryVolumeToSVO.h"
 #include "CADacomb/Volume/SVO/SVO.h"
 #include "LandscapeConfig.h"
@@ -54,8 +54,7 @@ namespace CADacomb
                                                    T                       solidValue  = static_cast<T>(true),
                                                    T                       emptyValue  = static_cast<T>(false),
                                                    uint32_t                chunkSize   = 32,
-                                                   const MergeStrategy<T>& strategy    = MostPrevalentExceptMergeStrategy<T, false>::instance(),
-                                                   IProgressBar*           progressBar = nullptr);
+                                                   const MergeStrategy<T>& strategy    = MostPrevalentExceptMergeStrategy<T, false>::instance());
 
         template<typename T>
         static void fillSVOChunk(SVO<T>&                svo,
@@ -172,15 +171,11 @@ namespace CADacomb
                                                                T                       solidValue,
                                                                T                       emptyValue,
                                                                uint32_t                chunkSize,
-                                                               const MergeStrategy<T>& strategy,
-                                                               IProgressBar*           progressBar)
+                                                               const MergeStrategy<T>& strategy)
     {
         assert(dimension > 0 && (dimension & (dimension - 1)) == 0);
 
-        if (progressBar)
-        {
-            progressBar->setProgress(0.0f, "Planning landscape chunks...");
-        }
+        ProgressBar planningBar(1, "Planning landscape chunks...");
 
         auto svo = std::make_unique<SVO<T>>(dimension, emptyValue, strategy);
 
@@ -223,94 +218,98 @@ namespace CADacomb
             }
         }
 
+        planningBar.addProgress(1);
+
         if (tasks.empty())
         {
-            if (progressBar)
-            {
-                progressBar->setProgress(1.0f, "Done");
-            }
             return svo;
         }
 
         std::vector<std::unique_ptr<SVO<T>>> chunkSVOs(tasks.size());
-        std::atomic<uint32_t>                completedChunks = 0;
-        const uint32_t                       totalChunks     = static_cast<uint32_t>(tasks.size());
+
+        {
+            ProgressBar evalBar(tasks.size(), "Evaluating terrain chunks");
 
 #pragma omp parallel for schedule(dynamic)
-        for (int i = 0; i < static_cast<int>(tasks.size()); i++)
-        {
-            const auto& task = tasks[i];
-            if (task.isGuaranteedSolid)
+            for (int i = 0; i < static_cast<int>(tasks.size()); i++)
             {
-                chunkSVOs[i] = std::make_unique<SVO<T>>(step, solidValue, svo->getMergeStrategy());
-            }
-            else
-            {
-                size_t         totalChunkVoxels = static_cast<size_t>(step) * step * step;
-                std::vector<T> grid(totalChunkVoxels, emptyValue);
-
-                fillChunkGridRecursive(grid, glm::ivec3(0), static_cast<int>(step), task.min, static_cast<int>(step), totalVolumeHeight, config, worldOffset, solidValue, emptyValue);
-
-                bool hasSolid = false;
-                bool hasEmpty = false;
-                for (size_t v = 0; v < totalChunkVoxels; v++)
+                if (evalBar.isCanceled())
                 {
-                    if (grid[v] == solidValue)
-                    {
-                        hasSolid = true;
-                        if (hasEmpty)
-                        {
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        hasEmpty = true;
-                        if (hasSolid)
-                        {
-                            break;
-                        }
-                    }
+                    continue;
                 }
 
-                if (!hasSolid)
-                {
-                    chunkSVOs[i] = nullptr;
-                }
-                else if (!hasEmpty)
+                const auto& task = tasks[i];
+                if (task.isGuaranteedSolid)
                 {
                     chunkSVOs[i] = std::make_unique<SVO<T>>(step, solidValue, svo->getMergeStrategy());
                 }
                 else
                 {
-                    chunkSVOs[i] = std::make_unique<SVO<T>>(grid, step, svo->getMergeStrategy());
+                    size_t         totalChunkVoxels = static_cast<size_t>(step) * step * step;
+                    std::vector<T> grid(totalChunkVoxels, emptyValue);
+
+                    fillChunkGridRecursive(grid, glm::ivec3(0), static_cast<int>(step), task.min, static_cast<int>(step), totalVolumeHeight, config, worldOffset, solidValue, emptyValue);
+
+                    bool hasSolid = false;
+                    bool hasEmpty = false;
+                    for (size_t v = 0; v < totalChunkVoxels; v++)
+                    {
+                        if (grid[v] == solidValue)
+                        {
+                            hasSolid = true;
+                            if (hasEmpty)
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            hasEmpty = true;
+                            if (hasSolid)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasSolid)
+                    {
+                        chunkSVOs[i] = nullptr;
+                    }
+                    else if (!hasEmpty)
+                    {
+                        chunkSVOs[i] = std::make_unique<SVO<T>>(step, solidValue, svo->getMergeStrategy());
+                    }
+                    else
+                    {
+                        chunkSVOs[i] = std::make_unique<SVO<T>>(grid, step, svo->getMergeStrategy());
+                    }
                 }
+
+                evalBar.addProgress(1);
             }
 
-            uint32_t done = completedChunks.fetch_add(1, std::memory_order_relaxed) + 1;
-            if (progressBar && (done % 4 == 0 || done == totalChunks))
+            if (evalBar.isCanceled())
             {
-                float ratio = 0.85f * static_cast<float>(done) / static_cast<float>(totalChunks);
-                progressBar->setProgress(ratio, "Evaluating terrain chunks (" + std::to_string(done) + "/" + std::to_string(totalChunks) + ")");
+                return nullptr;
             }
         }
 
-        for (size_t i = 0; i < tasks.size(); i++)
         {
-            if (chunkSVOs[i])
+            ProgressBar assembleBar(tasks.size(), "Assembling octree");
+            for (size_t i = 0; i < tasks.size(); i++)
             {
-                svo->setSubSVO(tasks[i].min, *chunkSVOs[i]);
-            }
-            if (progressBar && (i % 8 == 0 || i == tasks.size() - 1))
-            {
-                float ratio = 0.85f + 0.15f * (static_cast<float>(i + 1) / static_cast<float>(totalChunks));
-                progressBar->setProgress(ratio, "Assembling octree (" + std::to_string(i + 1) + "/" + std::to_string(totalChunks) + ")");
-            }
-        }
+                if (assembleBar.isCanceled())
+                {
+                    return nullptr;
+                }
 
-        if (progressBar)
-        {
-            progressBar->setProgress(1.0f, "Generation complete");
+                if (chunkSVOs[i])
+                {
+                    svo->setSubSVO(tasks[i].min, *chunkSVOs[i]);
+                }
+                assembleBar.addProgress(1);
+            }
         }
 
         return svo;
