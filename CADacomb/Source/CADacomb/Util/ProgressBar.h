@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CADacomb/Util/GUID.h"
 
@@ -50,5 +50,7 @@ namespace CADacomb
         static std::mutex                                                  registryMutex;
         static std::unordered_map<std::string, std::vector<ProgressBar*>*> activeStacks;
         static std::unordered_map<std::string, std::atomic<bool>*>         activeCancelFlags;
+
+        std::atomic<bool>* cancelToken = nullptr;
     };
 }

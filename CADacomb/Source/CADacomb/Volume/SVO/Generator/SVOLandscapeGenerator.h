@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CADacomb/Util/ProgressBar.h"
 #include "CADacomb/Volume/Flat/BinaryVolume.h"
@@ -175,8 +175,6 @@ namespace CADacomb
     {
         assert(dimension > 0 && (dimension & (dimension - 1)) == 0);
 
-        ProgressBar planningBar(1, "Planning landscape chunks...");
-
         auto svo = std::make_unique<SVO<T>>(dimension, emptyValue, strategy);
 
         uint32_t step    = (chunkSize > 0) ? std::min(chunkSize, dimension) : std::min(32u, dimension);
@@ -196,29 +194,38 @@ namespace CADacomb
         };
 
         std::vector<ChunkTask> tasks;
-        for (uint32_t z = 0; z < dimension; z += step)
         {
-            for (uint32_t y = 0; y < dimension; y += step)
+            ProgressBar planningBar(1, "Planning landscape chunks...");
+
+            for (uint32_t z = 0; z < dimension; z += step)
             {
-                for (uint32_t x = 0; x < dimension; x += step)
+                for (uint32_t y = 0; y < dimension; y += step)
                 {
-                    glm::ivec3 chunkMin(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z));
-                    auto [minDensity, maxDensity] = estimateDensityBounds(chunkMin, glm::ivec3(step), totalVolumeHeight, config, worldOffset);
-
-                    if (maxDensity <= config.solidThreshold)
+                    for (uint32_t x = 0; x < dimension; x += step)
                     {
-                        continue;
-                    }
+                        if (planningBar.isCanceled())
+                        {
+                            return nullptr;
+                        }
 
-                    ChunkTask task;
-                    task.min               = chunkMin;
-                    task.isGuaranteedSolid = (minDensity > config.solidThreshold && !canCarveCaves(chunkMin, glm::ivec3(step), totalVolumeHeight, config, worldOffset));
-                    tasks.push_back(task);
+                        glm::ivec3 chunkMin(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z));
+                        auto [minDensity, maxDensity] = estimateDensityBounds(chunkMin, glm::ivec3(step), totalVolumeHeight, config, worldOffset);
+
+                        if (maxDensity <= config.solidThreshold)
+                        {
+                            continue;
+                        }
+
+                        ChunkTask task;
+                        task.min               = chunkMin;
+                        task.isGuaranteedSolid = (minDensity > config.solidThreshold && !canCarveCaves(chunkMin, glm::ivec3(step), totalVolumeHeight, config, worldOffset));
+                        tasks.push_back(task);
+                    }
                 }
             }
-        }
 
-        planningBar.addProgress(1);
+            planningBar.addProgress(1);
+        }
 
         if (tasks.empty())
         {
@@ -230,7 +237,7 @@ namespace CADacomb
         {
             ProgressBar evalBar(tasks.size(), "Evaluating terrain chunks");
 
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic) shared(evalBar)
             for (int i = 0; i < static_cast<int>(tasks.size()); i++)
             {
                 if (evalBar.isCanceled())

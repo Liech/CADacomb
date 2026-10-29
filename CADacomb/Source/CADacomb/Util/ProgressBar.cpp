@@ -13,6 +13,7 @@ namespace CADacomb
     ProgressBar::ProgressBar(size_t maxProgress, const std::string& message)
       : maxProgress(maxProgress)
       , message(message)
+      , cancelToken(&threadCanceled)
     {
         currentProgress.store(0, std::memory_order_relaxed);
 
@@ -56,6 +57,10 @@ namespace CADacomb
 
     bool ProgressBar::isCanceled() const
     {
+        if (cancelToken)
+        {
+            return cancelToken->load(std::memory_order_relaxed);
+        }
         return threadCanceled.load(std::memory_order_relaxed);
     }
 

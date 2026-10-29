@@ -1,4 +1,4 @@
-﻿#include "SVOLandscapeGenerator.h"
+#include "SVOLandscapeGenerator.h"
 
 #include <algorithm>
 #include <cmath>
@@ -331,9 +331,16 @@ namespace CADacomb
             }
         }
 
-#pragma omp parallel for schedule(dynamic)
+        ProgressBar bar(static_cast<size_t>(dimZ), "Generating binary landscape");
+
+#pragma omp parallel for schedule(dynamic) shared(bar)
         for (int64_t z = 0; z < dimZ; z++)
         {
+            if (bar.isCanceled())
+            {
+                continue;
+            }
+
             for (int64_t y = 0; y < maxY; y++)
             {
                 if (y < solidY)
@@ -354,6 +361,13 @@ namespace CADacomb
                     }
                 }
             }
+
+            bar.addProgress(1);
+        }
+
+        if (bar.isCanceled())
+        {
+            return volume;
         }
 
         volume.data.assign(temp.begin(), temp.end());
