@@ -164,6 +164,62 @@ set(Volume_Flat_Files
 )
 source_group("Source/Volume/Flat" FILES ${Volume_Flat_Files})
 
+set(Volume_MagicaVox_Chunk_Files
+    "Source/CADacomb/Volume/MagicaVox/Chunk/Chunk.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkFactory.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkLAYR.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkLAYR.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkMAIN.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkMAIN.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkMATL.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkMATL.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunknGRP.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunknGRP.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunknSHP.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunknSHP.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunknTRN.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunknTRN.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkPACK.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkPACK.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkRGBA.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkRGBA.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkrOBJ.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkrOBJ.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkSIZE.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkSIZE.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkXYZI.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkXYZI.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkRCAM.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkRCAM.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkNOTE.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkNOTE.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/Chunk.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/UnkownChunk.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/UnkownChunk.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkFactory.cpp"
+)
+source_group("Source/Volume/MagicaVox/Chunk/" FILES ${Volume_MagicaVox_Chunk_Files})
+
+set(Volume_MagicaVox_IO
+    "Source/CADacomb/Volume/MagicaVox/IO/Reader.h"
+    "Source/CADacomb/Volume/MagicaVox/IO/Reader.cpp"
+    "Source/CADacomb/Volume/MagicaVox/IO/typeDICT.h"
+    "Source/CADacomb/Volume/MagicaVox/IO/typeDICT.cpp"
+    "Source/CADacomb/Volume/MagicaVox/IO/typeROTATION.h"
+    "Source/CADacomb/Volume/MagicaVox/IO/typeROTATION.cpp"
+    "Source/CADacomb/Volume/MagicaVox/IO/Writer.h"
+    "Source/CADacomb/Volume/MagicaVox/IO/Writer.cpp"
+)
+source_group("Source/Volume/MagicaVox/IO" FILES ${Volume_MagicaVox_IO})
+
+set(Volume_MagicaVox_Files
+    "Source/CADacomb/Volume/MagicaVox/VoxFile.h"
+    "Source/CADacomb/Volume/MagicaVox/VoxFile.cpp"
+    "Source/CADacomb/Volume/MagicaVox/VoxFileRaw.h"
+    "Source/CADacomb/Volume/MagicaVox/VoxFileRaw.cpp"
+)
+source_group("Source/Volume/MagicaVox" FILES ${Volume_MagicaVox_Files})
+
 set(Volume_MergeStrategy_Files
     "Source/CADacomb/Volume/MergeStrategy/MergeStrategy.h"
     "Source/CADacomb/Volume/MergeStrategy/MergeStrategy.cpp"
@@ -263,6 +319,9 @@ set(ALL_FILES
     ${Volume_BrickSVO_Files}
     ${Volume_Flat_Files}
     ${Volume_MergeStrategy_Files}
+    ${Volume_MagicaVox_Chunk_Files}
+    ${Volume_MagicaVox_IO}
+    ${Volume_MagicaVox_Files}
     ${Volume_SVO_Files}
     ${Volume_SVO_Blocky_Files}
     ${Volume_SVO_Generator_Files}
