@@ -105,6 +105,8 @@ source_group("Source/CAD/Step" FILES ${CAD_Step_Files})
 set(Triangle_Files
     "Source/CADacomb/Triangle/BaseShapeGenerator.h"
     "Source/CADacomb/Triangle/BaseShapeGenerator.cpp"
+    "Source/CADacomb/Triangle/Clustering.h"
+    "Source/CADacomb/Triangle/Clustering.cpp"
     "Source/CADacomb/Triangle/Triangulation.h"
     "Source/CADacomb/Triangle/Triangulation.cpp"
     "Source/CADacomb/Triangle/sreiter_stl_reader_LICENSE"
