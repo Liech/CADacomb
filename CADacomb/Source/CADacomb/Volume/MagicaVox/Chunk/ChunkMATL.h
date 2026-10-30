@@ -9,13 +9,12 @@ namespace MagicaVoxImporter
     class ChunkMATL : public Chunk
     {
       public:
-        std::string getID() const override
-        {
-            return "MATL";
-        }
-        void read(Reader own, Reader child) override;
+        virtual ~ChunkMATL();
 
-        int                                MaterialID;
-        std::map<std::string, std::string> Properties;
+        std::string getID() const override;
+        void        read(Reader own, Reader child) override;
+
+        int                                materialId;
+        std::map<std::string, std::string> properties;
     };
 }

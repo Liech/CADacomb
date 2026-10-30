@@ -1,20 +1,19 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 
-namespace MagicaVoxImporter {
-  class Chunk;
-  
-  class VoxFileRaw {
-  public:
-    VoxFileRaw();
-    virtual ~VoxFileRaw();
+namespace MagicaVoxImporter
+{
+    class Chunk;
 
-    static std::unique_ptr<Chunk> read(const std::string& filename);
-    static void write(const Chunk&, const std::string& filename);
+    class VoxFileRaw
+    {
+      public:
+        VoxFileRaw();
+        virtual ~VoxFileRaw();
 
-  private:
-
-  };
+        static std::unique_ptr<Chunk> read(const std::string& filename);
+        static void                   write(const Chunk& chunk, const std::string& filename);
+    };
 }

@@ -4,19 +4,25 @@
 
 namespace MagicaVoxImporter
 {
+    ChunknSHP::~ChunknSHP() {}
+
+    std::string ChunknSHP::getID() const
+    {
+        return "nSHP";
+    }
 
     void ChunknSHP::read(Reader own, Reader child)
     {
         Chunk::read(own, child);
-        ID                 = own.readInt();
-        Attributes         = own.readDict();
+        id                 = own.readInt();
+        attributes         = own.readDict();
         int numberOfModels = own.readInt();
-        Models.resize(numberOfModels);
+        models.resize(numberOfModels);
         for (int i = 0; i < numberOfModels; i++)
         {
-            int  id   = own.readInt();
-            auto attr = own.readDict();
-            Models[i] = std::make_pair(id, attr);
+            int  modelId         = own.readInt();
+            auto modelAttributes = own.readDict();
+            models[i]            = std::make_pair(modelId, modelAttributes);
         }
     }
 }

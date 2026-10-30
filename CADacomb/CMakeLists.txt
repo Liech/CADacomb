@@ -197,16 +197,18 @@ set(Volume_MagicaVox_Chunk_Files
     "Source/CADacomb/Volume/MagicaVox/Chunk/UnkownChunk.h"
     "Source/CADacomb/Volume/MagicaVox/Chunk/UnkownChunk.cpp"
     "Source/CADacomb/Volume/MagicaVox/Chunk/ChunkFactory.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/Color.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/Color.cpp"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/Voxel.h"
+    "Source/CADacomb/Volume/MagicaVox/Chunk/Voxel.cpp"
 )
 source_group("Source/Volume/MagicaVox/Chunk/" FILES ${Volume_MagicaVox_Chunk_Files})
 
 set(Volume_MagicaVox_IO
     "Source/CADacomb/Volume/MagicaVox/IO/Reader.h"
     "Source/CADacomb/Volume/MagicaVox/IO/Reader.cpp"
-    "Source/CADacomb/Volume/MagicaVox/IO/typeDICT.h"
-    "Source/CADacomb/Volume/MagicaVox/IO/typeDICT.cpp"
-    "Source/CADacomb/Volume/MagicaVox/IO/typeROTATION.h"
-    "Source/CADacomb/Volume/MagicaVox/IO/typeROTATION.cpp"
+    "Source/CADacomb/Volume/MagicaVox/IO/Rotation.h"
+    "Source/CADacomb/Volume/MagicaVox/IO/Rotation.cpp"
     "Source/CADacomb/Volume/MagicaVox/IO/Writer.h"
     "Source/CADacomb/Volume/MagicaVox/IO/Writer.cpp"
 )

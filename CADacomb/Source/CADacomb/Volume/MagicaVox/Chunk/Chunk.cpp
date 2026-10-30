@@ -1,15 +1,16 @@
 #include "Chunk.h"
 
-#include "ChunkFactory.h"
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
+#include "ChunkFactory.h"
 
 #include <iostream>
 
 namespace MagicaVoxImporter
 {
+    Chunk::~Chunk() {}
+
     void Chunk::read(Reader own, Reader child)
     {
-        // handle children
         while (!child.endOfBufferReached())
         {
             auto chunk = child.readChunk();
@@ -18,27 +19,27 @@ namespace MagicaVoxImporter
         }
     }
 
+    void Chunk::print(int indentation)
+    {
+        std::cout << std::string(indentation, ' ') << getID() << std::endl;
+        for (int i = 0; i < childs.size(); i++)
+            childs[i]->print(indentation + 1);
+    }
+
+    void Chunk::write(std::vector<unsigned char>& file) const {}
+
     size_t Chunk::numberOfChilds() const
     {
-        return _childs.size();
+        return childs.size();
     }
 
     const Chunk& Chunk::getChild(size_t i) const
     {
-        return *_childs[i];
+        return *childs[i];
     }
 
     void Chunk::addChild(std::unique_ptr<Chunk> newchild)
     {
-        _childs.push_back(std::move(newchild));
+        childs.push_back(std::move(newchild));
     }
-
-    void Chunk::print(int indentation)
-    {
-        std::cout << std::string(indentation, ' ') << getID() << std::endl;
-        for (int i = 0; i < _childs.size(); i++)
-            _childs[i]->print(indentation + 1);
-    }
-
-    void Chunk::write(std::vector<unsigned char>& file) const {}
 }

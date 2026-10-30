@@ -8,6 +8,13 @@
 
 namespace MagicaVoxImporter
 {
+    ChunkSIZE::~ChunkSIZE() {}
+
+    std::string ChunkSIZE::getID() const
+    {
+        return "SIZE";
+    }
+
     void ChunkSIZE::read(Reader own, Reader child)
     {
         Chunk::read(own, child);
@@ -27,8 +34,8 @@ namespace MagicaVoxImporter
     void ChunkSIZE::write(std::vector<unsigned char>& file) const
     {
         Writer::write(file, getID());
-        Writer::write(file, 12); // own content size
-        Writer::write(file, 0);  // child size
+        Writer::write(file, 12);
+        Writer::write(file, 0);
         Writer::write(file, sizeX);
         Writer::write(file, sizeY);
         Writer::write(file, sizeZ);

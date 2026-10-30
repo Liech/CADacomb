@@ -1,24 +1,28 @@
 #pragma once
 
+#include "CADacomb/Volume/MagicaVox/Chunk/Color.h"
 #include "Chunk.h"
 
-namespace MagicaVoxImporter {
-  struct color {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
-    unsigned char a;
-  };
+namespace MagicaVoxImporter
+{
+    // Chunk id 'RGBA' : palette. Default palette is used if chunk 'RGBA' is absent
+    class ChunkRGBA : public Chunk
+    {
+      public:
+        virtual ~ChunkRGBA();
 
-  //Chunk id 'RGBA' : palette
-  //Default Palette : if chunk 'RGBA' is absent
-  class ChunkRGBA : public  Chunk {
-  public:
-    std::string getID() const override { return "RGBA"; }
-    void read(Reader own, Reader child) override;
+        std::string getID() const override;
+        void        read(Reader own, Reader child) override;
 
-    color palette[256];
+        static std::unique_ptr<ChunkRGBA> getDefault();
 
-    static std::unique_ptr<ChunkRGBA> getDefault();
-  };
+      private:
+        static Color intToColor(unsigned int value);
+
+      public:
+        Color palette[256];
+
+      private:
+        static const unsigned int defaultPalette[256];
+    };
 }

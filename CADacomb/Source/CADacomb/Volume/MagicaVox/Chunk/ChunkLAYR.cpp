@@ -4,12 +4,19 @@
 
 namespace MagicaVoxImporter
 {
+    ChunkLAYR::~ChunkLAYR() {}
+
+    std::string ChunkLAYR::getID() const
+    {
+        return "LAYR";
+    }
+
     void ChunkLAYR::read(Reader own, Reader child)
     {
         Chunk::read(own, child);
 
-        LayerID    = own.readInt();
-        Attributes = own.readDict();
-        own.readInt(); // reserved stuff
+        layerId    = own.readInt();
+        attributes = own.readDict();
+        own.readInt();
     }
 }

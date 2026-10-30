@@ -9,14 +9,13 @@ namespace MagicaVoxImporter
     class ChunknSHP : public Chunk
     {
       public:
-        std::string getID() const override
-        {
-            return "nSHP";
-        }
-        void read(Reader own, Reader child) override;
+        virtual ~ChunknSHP();
 
-        int                                                             ID;
-        std::map<std::string, std::string>                              Attributes;
-        std::vector<std::pair<int, std::map<std::string, std::string>>> Models;
+        std::string getID() const override;
+        void        read(Reader own, Reader child) override;
+
+        int                                                             id;
+        std::map<std::string, std::string>                              attributes;
+        std::vector<std::pair<int, std::map<std::string, std::string>>> models;
     };
 }

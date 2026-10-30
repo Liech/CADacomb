@@ -5,27 +5,18 @@
 
 #include "Chunk.h"
 
-// enum class CameraMode {
-//   Perspective,// pers
-//   Free,       // free
-//   Pano,       // pano
-//   Iso,        // iso
-//   Orthogonal  // orth
-// };
-
 namespace MagicaVoxImporter
 {
     // Render Camera Chunk
     class ChunkRCAM : public Chunk
     {
       public:
-        std::string getID() const override
-        {
-            return "RCAM";
-        }
-        void read(Reader own, Reader child) override;
+        virtual ~ChunkRCAM();
 
-        int                                cameraID;
+        std::string getID() const override;
+        void        read(Reader own, Reader child) override;
+
+        int                                cameraId;
         std::map<std::string, std::string> attributes;
     };
 }

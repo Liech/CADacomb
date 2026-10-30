@@ -5,22 +5,19 @@
 #include <string>
 #include <vector>
 
+#include "CADacomb/Volume/MagicaVox/IO/Rotation.h"
+
 namespace MagicaVoxImporter
 {
     class Chunk;
 
-    struct Rotation
-    {
-        int v00 = 0, v10 = 0, v20 = 0;
-        int v01 = 0, v11 = 0, v21 = 0;
-        int v02 = 0, v12 = 0, v22 = 0;
-    };
-
     class Reader
     {
       public:
-        Reader(std::vector<unsigned char> content);
-        Reader() {}
+        Reader();
+        Reader(const std::vector<unsigned char>& buffer);
+        virtual ~Reader();
+
         Reader                             read(size_t numberOfBytes);
         std::vector<unsigned char>         readChars(size_t numberOfBytes);
         std::string                        readChunkID();
@@ -32,9 +29,9 @@ namespace MagicaVoxImporter
         Rotation                           readRotation();
 
       private:
-        size_t                     _currentPosition = 0;
-        std::vector<unsigned char> _content;
-
         void assertCanRead();
+
+        size_t                     currentPosition = 0;
+        std::vector<unsigned char> content;
     };
 }

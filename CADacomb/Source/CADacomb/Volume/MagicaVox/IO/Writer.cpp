@@ -2,6 +2,8 @@
 
 namespace MagicaVoxImporter
 {
+    Writer::~Writer() {}
+
     void Writer::write(std::ofstream& stream, const int& value)
     {
         unsigned char bytes[4];

@@ -4,16 +4,23 @@
 
 namespace MagicaVoxImporter
 {
+    ChunknGRP::~ChunknGRP() {}
+
+    std::string ChunknGRP::getID() const
+    {
+        return "nGRP";
+    }
+
     void ChunknGRP::read(Reader own, Reader child)
     {
         Chunk::read(own, child);
 
-        ID                   = own.readInt();
-        Attributes           = own.readDict();
+        id                   = own.readInt();
+        attributes           = own.readDict();
         int numberOfChildren = own.readInt();
-        ChildNodes.clear();
-        ChildNodes.resize(numberOfChildren);
+        childNodes.clear();
+        childNodes.resize(numberOfChildren);
         for (int i = 0; i < numberOfChildren; i++)
-            ChildNodes[i] = own.readInt();
+            childNodes[i] = own.readInt();
     }
 }

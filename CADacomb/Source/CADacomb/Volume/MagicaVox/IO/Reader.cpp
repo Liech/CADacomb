@@ -5,14 +5,18 @@
 
 namespace MagicaVoxImporter
 {
-    Reader::Reader(std::vector<unsigned char> content)
+    Reader::Reader() {}
+
+    Reader::Reader(const std::vector<unsigned char>& buffer)
     {
-        _content = content;
+        content = buffer;
     }
+
+    Reader::~Reader() {}
 
     bool Reader::endOfBufferReached()
     {
-        return _content.size() <= _currentPosition;
+        return content.size() <= currentPosition;
     }
 
     void Reader::assertCanRead()
@@ -31,16 +35,16 @@ namespace MagicaVoxImporter
         if (numberOfBytes == 0)
             return {};
         assertCanRead();
-        std::vector<unsigned char> subVector(_content.begin() + _currentPosition, _content.begin() + _currentPosition + numberOfBytes);
-        _currentPosition += numberOfBytes;
+        std::vector<unsigned char> subVector(content.begin() + currentPosition, content.begin() + currentPosition + numberOfBytes);
+        currentPosition += numberOfBytes;
         return subVector;
     }
 
     std::string Reader::readChunkID()
     {
         assertCanRead();
-        std::string id(_content.begin() + _currentPosition, _content.begin() + _currentPosition + 4);
-        _currentPosition += 4;
+        std::string id(content.begin() + currentPosition, content.begin() + currentPosition + 4);
+        currentPosition += 4;
         return id;
     }
 
@@ -65,13 +69,11 @@ namespace MagicaVoxImporter
             child = read(childContent);
         std::unique_ptr<Chunk> result = ChunkFactory::make(id);
         result->read(own, child);
-        return std::move(result);
+        return result;
     }
 
     std::string Reader::readString()
     {
-        // int32: buffer size(in bytes)
-        // int8xN : buffer(without the ending "\0")
         int                        size = readInt();
         std::vector<unsigned char> msg  = readChars(size);
         return std::string(msg.begin(), msg.end());
@@ -79,13 +81,6 @@ namespace MagicaVoxImporter
 
     std::map<std::string, std::string> Reader::readDict()
     {
-        // int32: num of key - value pairs
-
-        //  // for each key-value pair
-        //{
-        // STRING: key
-        // STRING : value
-        //}xN
         int                                numberOfPairs = readInt();
         std::map<std::string, std::string> result;
 
@@ -100,17 +95,9 @@ namespace MagicaVoxImporter
 
     Rotation Reader::readRotation()
     {
-        // bit | value
-        // 0-1 : 1 : index of the non-zero entry in the first row
-        // 2-3 : 2 : index of the non-zero entry in the second row
-        // 4   : 0 : the sign in the first row (0 : positive; 1 : negative)
-        // 5   : 1 : the sign in the second row (0 : positive; 1 : negative)
-        // 6   : 1 : the sign in the third row (0 : positive; 1 : negative)
-
         Rotation      result;
         unsigned char raw = readChars(1)[0];
 
-        // maybe the endian order is reversed here?
         int  firstRowPos   = (0b11000000 & raw) >> 6;
         int  secondRowPos  = (0b00110000 & raw) >> 4;
         bool signFirstRow  = (0b00001000 & raw) != 0;

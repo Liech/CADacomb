@@ -8,11 +8,10 @@ namespace MagicaVoxImporter
     class ChunkPACK : public Chunk
     {
       public:
-        std::string getID() const override
-        {
-            return "PACK";
-        }
-        void read(Reader own, Reader child) override;
+        virtual ~ChunkPACK();
+
+        std::string getID() const override;
+        void        read(Reader own, Reader child) override;
 
         int numModels = 0;
     };

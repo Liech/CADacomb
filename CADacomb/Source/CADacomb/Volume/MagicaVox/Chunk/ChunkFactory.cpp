@@ -1,8 +1,6 @@
 #include "ChunkFactory.h"
 #include "Chunk.h"
-#include <stdexcept>
 
-// No fancy template factory. I hope it is easier to understand this way
 #include "ChunkLAYR.h"
 #include "ChunkMAIN.h"
 #include "ChunkMATL.h"
@@ -20,7 +18,9 @@
 
 namespace MagicaVoxImporter
 {
-    std::unique_ptr<Chunk> ChunkFactory::make(std::string id)
+    ChunkFactory::~ChunkFactory() {}
+
+    std::unique_ptr<Chunk> ChunkFactory::make(const std::string& id)
     {
         if (id == "LAYR")
             return std::make_unique<ChunkLAYR>();
@@ -49,7 +49,6 @@ namespace MagicaVoxImporter
         else if (id == "NOTE")
             return std::make_unique<ChunkNOTE>();
         else
-            return std::make_unique<UnkownChunk>(); // unkown chunk
-            //throw std::runtime_error("Unkown ID: " + id);
+            return std::make_unique<UnkownChunk>();
     }
 }

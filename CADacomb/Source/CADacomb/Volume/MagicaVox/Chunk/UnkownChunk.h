@@ -7,10 +7,9 @@ namespace MagicaVoxImporter
     class UnkownChunk : public Chunk
     {
       public:
-        std::string getID() const override
-        {
-            return "????";
-        }
-        void read(Reader own, Reader child) override;
+        virtual ~UnkownChunk();
+
+        std::string getID() const override;
+        void        read(Reader own, Reader child) override;
     };
 }

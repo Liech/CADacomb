@@ -5,12 +5,18 @@
 
 namespace MagicaVoxImporter
 {
+    ChunkMATL::~ChunkMATL() {}
+
+    std::string ChunkMATL::getID() const
+    {
+        return "MATL";
+    }
 
     void ChunkMATL::read(Reader own, Reader child)
     {
         Chunk::read(own, child);
 
-        MaterialID = own.readInt();
-        Properties = own.readDict();
+        materialId = own.readInt();
+        properties = own.readDict();
     }
 }

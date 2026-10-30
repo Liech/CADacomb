@@ -8,11 +8,9 @@ namespace MagicaVoxImporter
     class ChunkMAIN : public Chunk
     {
       public:
-        std::string getID() const override
-        {
-            return "MAIN";
-        }
+        virtual ~ChunkMAIN();
 
-        virtual void write(std::vector<unsigned char>&) const override;
+        std::string getID() const override;
+        void        write(std::vector<unsigned char>&) const override;
     };
 }

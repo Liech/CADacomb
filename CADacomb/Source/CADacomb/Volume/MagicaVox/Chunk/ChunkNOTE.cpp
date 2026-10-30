@@ -1,11 +1,15 @@
 #include "ChunkNOTE.h"
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 
-#include <iostream>
-#include <string>
-
 namespace MagicaVoxImporter
 {
+    ChunkNOTE::~ChunkNOTE() {}
+
+    std::string ChunkNOTE::getID() const
+    {
+        return "NOTE";
+    }
+
     void ChunkNOTE::read(Reader own, Reader child)
     {
         Chunk::read(own, child);
@@ -14,8 +18,6 @@ namespace MagicaVoxImporter
 
         colorNames.resize(amountColors);
         for (int i = 0; i < amountColors; i++)
-        {
             colorNames[i] = own.readString();
-        }
     }
 }
