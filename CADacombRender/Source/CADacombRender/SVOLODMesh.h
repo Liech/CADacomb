@@ -20,7 +20,7 @@ namespace CADacomb::Render
     class SVOLODMesh
     {
       public:
-        SVOLODMesh(Vulcant::VulcantDevice& device, CADacomb::SVO<T>& svo, const CADacomb::AABB3& volumeBounds, size_t vertexCapacity, uint32_t chunkSize = 32, int initialLOD = -1);
+        SVOLODMesh(Vulcant::VulcantDevice& device, const CADacomb::SVO<T>& svo, const CADacomb::AABB3& volumeBounds, size_t vertexCapacity, uint32_t chunkSize = 32, int initialLOD = -1);
         virtual ~SVOLODMesh();
 
         void markDirty(const CADacomb::AABB3& dirtyBounds);
@@ -55,7 +55,7 @@ namespace CADacomb::Render
         size_t getChunkIndex(uint32_t x, uint32_t y, uint32_t z) const;
 
         CADacomb::Render::VulcantFragmentationBuffer<Vulcant::Toolkit::MeshVertex> buffer;
-        CADacomb::SVO<T>&                                                          svo;
+        const CADacomb::SVO<T>&                                                    svo;
         CADacomb::AABB3                                                            volumeBounds;
         std::vector<SVOLODChunk>                                                   chunks;
         std::vector<SVOLODChunk>                                                   borderChunks;
@@ -70,7 +70,7 @@ namespace CADacomb::Render
     };
 
     template<typename T>
-    SVOLODMesh<T>::SVOLODMesh(Vulcant::VulcantDevice& device, CADacomb::SVO<T>& svo, const CADacomb::AABB3& volumeBounds, size_t vertexCapacity, uint32_t chunkSize, int initialLOD)
+    SVOLODMesh<T>::SVOLODMesh(Vulcant::VulcantDevice& device, const CADacomb::SVO<T>& svo, const CADacomb::AABB3& volumeBounds, size_t vertexCapacity, uint32_t chunkSize, int initialLOD)
       : buffer(device, vertexCapacity, Vulcant::VulcantBufferType::Vertex)
       , svo(svo)
       , volumeBounds(volumeBounds)
