@@ -1,5 +1,6 @@
 #include "StepWriterSm.h"
 
+#include "CADacomb/Util/ProgressBar.h"
 #include "CompSolidSm.h"
 #include "CompoundSm.h"
 #include "SmPyError.h"
@@ -91,13 +92,19 @@ namespace CADacomb::CAD
         int         originPlacementId = buffer.addAxis2Placement3d(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(1.0, 0.0, 0.0));
         std::string itemsText         = "#" + std::to_string(originPlacementId);
 
+        ProgressBar bar(breps.size() + 1, "Exporting STEP file");
         for (size_t brepIndex = 0; brepIndex < breps.size(); brepIndex++)
         {
+            if (bar.isCanceled())
+            {
+                return;
+            }
             std::vector<int> solidIds = writeSolids(buffer, breps[brepIndex], productName);
             for (size_t index = 0; index < solidIds.size(); index++)
             {
                 itemsText += ",#" + std::to_string(solidIds[index]);
             }
+            bar.addProgress(1);
         }
 
         int representationId = buffer.addRawLine("ADVANCED_BREP_SHAPE_REPRESENTATION(" + buffer.formatString(productName) + ",(" + itemsText + "),#" + std::to_string(geometricContextId) + ")");
@@ -119,6 +126,7 @@ namespace CADacomb::CAD
             outputStream << "#" << (index + 1) << "=" << lines[index] << ";\n";
         }
         outputStream << "ENDSEC;\nEND-ISO-10303-21;\n";
+        bar.addProgress(1);
     }
 
     int StepWriterSm::writeBSplineCurve(StepEntityBuffer& buffer, const smlibpy::Value& curveValue) const

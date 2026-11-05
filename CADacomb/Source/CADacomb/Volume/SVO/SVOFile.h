@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "CADacomb/Util/ProgressBar.h"
 #include "CADacomb/Volume/AABB3.h"
 #include "CADacomb/Volume/MergeStrategy/MergeStrategyType.h"
 #include "CADacomb/Volume/SVO/AnySVO.h"
@@ -88,6 +89,7 @@ namespace CADacomb
         uint64_t    nodeCount = static_cast<uint64_t>(nodes.size());
         stream.write(reinterpret_cast<const char*>(&nodeCount), sizeof(nodeCount));
 
+        ProgressBar bar(nodes.size(), "Saving SVO nodes");
         for (size_t i = 0; i < nodes.size(); i++)
         {
             const auto& node         = nodes[i];
@@ -102,6 +104,12 @@ namespace CADacomb
             else
             {
                 stream.write(reinterpret_cast<const char*>(&node.value), sizeof(T));
+            }
+
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                throw std::runtime_error("Saving SVO canceled");
             }
         }
 
@@ -164,6 +172,7 @@ namespace CADacomb
             throw std::runtime_error("Failed to read node count");
         }
 
+        ProgressBar             bar(nodeCount, "Loading SVO nodes");
         std::vector<SVONode<T>> nodes(nodeCount);
         for (uint64_t i = 0; i < nodeCount; i++)
         {
@@ -182,6 +191,12 @@ namespace CADacomb
             }
             nodes[i].childPointer = childPointer;
             nodes[i].value        = value;
+
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                throw std::runtime_error("Loading SVO canceled");
+            }
         }
 
         uint64_t parentCount = 0;

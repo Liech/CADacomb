@@ -2,6 +2,7 @@
 
 #include "CADacomb/CAD/Step/StepArgumentType.h"
 #include "CADacomb/CAD/Step/StepParser.h"
+#include "CADacomb/Util/ProgressBar.h"
 #include "SmPyError.h"
 #include "SolidSm.h"
 #include "StepLoopEntrySm.h"
@@ -42,8 +43,14 @@ namespace CADacomb::CAD
         std::vector<std::unique_ptr<Shape>> shapes;
 
         const std::unordered_map<int, std::pair<std::string, std::vector<StepArgument>>>& entities = document.getEntities();
+        ProgressBar                                                                       bar(entities.size(), "Constructing STEP shapes");
         for (std::unordered_map<int, std::pair<std::string, std::vector<StepArgument>>>::const_iterator iterator = entities.begin(); iterator != entities.end(); iterator++)
         {
+            if (bar.isCanceled())
+            {
+                break;
+            }
+
             const std::string&               typeName  = iterator->second.first;
             const std::vector<StepArgument>& arguments = iterator->second.second;
 
@@ -90,6 +97,8 @@ namespace CADacomb::CAD
                     shapes.push_back(std::make_unique<SolidSm>(brep));
                 }
             }
+
+            bar.addProgress(1);
         }
 
         if (shapes.empty())

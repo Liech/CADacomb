@@ -3,6 +3,7 @@
 #include "CADacomb/Triangle/Util/STLWriter.h"
 #include "CADacomb/Triangle/Util/stl_reader.h"
 #include "CADacomb/Util/Binary/base64.h"
+#include "CADacomb/Util/ProgressBar.h"
 
 #include <algorithm>
 #include <fstream>
@@ -15,22 +16,34 @@ namespace CADacomb
 
     void Triangulation::saveAsSTL(const std::string& filename) const
     {
+        ProgressBar             bar(indices.size(), "Preparing STL facets");
         std::vector<glm::dvec3> tri;
         tri.resize(indices.size());
         for (size_t i = 0; i < indices.size(); i++)
         {
             tri[i] = vertices[indices[i]];
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                return;
+            }
         }
         STLWriter::write(filename, tri);
     }
 
     void Triangulation::saveAsSTL(std::ostream& stream) const
     {
+        ProgressBar             bar(indices.size(), "Preparing STL facets");
         std::vector<glm::dvec3> tri;
         tri.resize(indices.size());
         for (size_t i = 0; i < indices.size(); i++)
         {
             tri[i] = vertices[indices[i]];
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                return;
+            }
         }
         STLWriter::write(stream, tri);
     }
@@ -68,16 +81,30 @@ namespace CADacomb
             return nullptr;
         }
 
-        result->vertices.reserve(coords.size() / 3);
+        size_t      vertexCount = coords.size() / 3;
+        size_t      indexCount  = tris.size();
+        ProgressBar bar(vertexCount + indexCount, "Processing STL mesh");
+
+        result->vertices.reserve(vertexCount);
         for (size_t i = 0; i < coords.size(); i += 3)
         {
             result->vertices.emplace_back(coords[i + 0], coords[i + 1], coords[i + 2]);
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                return nullptr;
+            }
         }
 
-        result->indices.reserve(tris.size());
+        result->indices.reserve(indexCount);
         for (size_t i = 0; i < tris.size(); i++)
         {
             result->indices.push_back(static_cast<size_t>(tris[i]));
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                return nullptr;
+            }
         }
 
         return result;

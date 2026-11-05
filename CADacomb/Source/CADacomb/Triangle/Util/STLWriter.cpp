@@ -1,5 +1,7 @@
 #include "CADacomb/Triangle/Util/STLWriter.h"
 
+#include "CADacomb/Util/ProgressBar.h"
+
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -29,6 +31,8 @@ namespace CADacomb
 
         uint32_t triangleCount = static_cast<uint32_t>(data.size() / 3);
         stream.write(reinterpret_cast<const char*>(&triangleCount), sizeof(uint32_t));
+
+        ProgressBar bar(data.size() / 3, "Writing binary STL");
 
         for (size_t i = 0; i < data.size() / 3; i++)
         {
@@ -60,6 +64,12 @@ namespace CADacomb
 
             uint16_t attributeByteCount = 0;
             stream.write(reinterpret_cast<const char*>(&attributeByteCount), sizeof(uint16_t));
+
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                return;
+            }
         }
     }
 
@@ -76,6 +86,8 @@ namespace CADacomb
     {
         stream << "solid\n";
         stream << std::setprecision(10);
+
+        ProgressBar bar(data.size() / 3, "Writing ASCII STL");
 
         for (size_t i = 0; i < data.size() / 3; i++)
         {
@@ -100,6 +112,12 @@ namespace CADacomb
             stream << "        vertex " << c.x << " " << c.y << " " << c.z << "\n";
             stream << "    endloop\n";
             stream << "endfacet\n";
+
+            bar.addProgress(1);
+            if (bar.isCanceled())
+            {
+                return;
+            }
         }
 
         stream << "endsolid\n";
