@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CADacomb/Volume/AABB3.h"
+#include "CADacomb/Util/AABB3.h"
 #include "LODDecision.h"
 #include "SceneData.h"
 #include <cstddef>

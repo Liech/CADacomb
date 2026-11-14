@@ -20,10 +20,14 @@ set(Binary_Files
 source_group("Source/Util/Binary" FILES ${Binary_Files})
 
 set(Util_Files
+    "Source/CADacomb/Util/AABB3.h"
+    "Source/CADacomb/Util/AABB3.cpp"
     "Source/CADacomb/Util/GUID.h"
     "Source/CADacomb/Util/GUID.cpp"
     "Source/CADacomb/Util/ProgressBar.h"
     "Source/CADacomb/Util/ProgressBar.cpp"
+    "Source/CADacomb/Util/Ray.h"
+    "Source/CADacomb/Util/Ray.cpp"
 )
 source_group("Source/Util" FILES ${Util_Files})
 
@@ -130,11 +134,6 @@ set(Triangle_Util_Files
 )
 source_group("Source/Triangle/Util" FILES ${Triangle_Util_Files})
 
-set(Volume_Files
-    "Source/CADacomb/Volume/AABB3.h"
-    "Source/CADacomb/Volume/AABB3.cpp"
-)
-source_group("Source/Volume" FILES ${Volume_Files})
 
 set(Volume_BrickSVO_Files
     "Source/CADacomb/Volume/BrickSVO/IBrickSVO.h"
@@ -317,7 +316,6 @@ set(ALL_FILES
     ${Triangle_Files}
     ${Triangle_HalfEdge_Files}
     ${Triangle_Util_Files}
-    ${Volume_Files}
     ${Volume_BrickSVO_Files}
     ${Volume_Flat_Files}
     ${Volume_MergeStrategy_Files}

@@ -9,7 +9,7 @@
 #include <string>
 
 #include "CADacomb/Util/ProgressBar.h"
-#include "CADacomb/Volume/AABB3.h"
+#include "CADacomb/Util/AABB3.h"
 #include "CADacomb/Volume/MergeStrategy/MergeStrategyType.h"
 #include "CADacomb/Volume/SVO/AnySVO.h"
 #include "CADacomb/Volume/SVO/Datatype.h"

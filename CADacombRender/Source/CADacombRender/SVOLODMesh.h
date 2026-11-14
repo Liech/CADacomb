@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CADacomb/Volume/AABB3.h"
+#include "CADacomb/Util/AABB3.h"
 #include "CADacomb/Volume/LODStrategy/LODStrategy.h"
 #include "CADacomb/Volume/SVO/SVO.h"
 #include "CADacomb/Volume/SVOMesher/SVOCPUMesher.h"
