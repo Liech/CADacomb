@@ -19,26 +19,26 @@ namespace CADacomb
             return Ray();
         }
 
-        float ndcX = (2.0f * screenPos.x) / resolution.x - 1.0f;
-        float ndcY = (2.0f * screenPos.y) / resolution.y - 1.0f;
+        double ndcX = (2.0 * static_cast<double>(screenPos.x)) / static_cast<double>(resolution.x) - 1.0;
+        double ndcY = (2.0 * static_cast<double>(screenPos.y)) / static_cast<double>(resolution.y) - 1.0;
 
-        glm::mat4 invViewProj = invViewMatrix * invProjectionMatrix;
+        glm::dmat4 invViewProj = glm::dmat4(invViewMatrix) * glm::dmat4(invProjectionMatrix);
 
-        glm::vec4 nearClip(ndcX, ndcY, 0.0f, 1.0f);
-        glm::vec4 farClip(ndcX, ndcY, 1.0f, 1.0f);
+        glm::dvec4 nearClip(ndcX, ndcY, -1.0, 1.0);
+        glm::dvec4 midClip(ndcX, ndcY, 0.0, 1.0);
 
-        glm::vec4 nearWorldH = invViewProj * nearClip;
-        glm::vec4 farWorldH  = invViewProj * farClip;
+        glm::dvec4 nearWorldH = invViewProj * nearClip;
+        glm::dvec4 midWorldH  = invViewProj * midClip;
 
-        if (glm::abs(nearWorldH.w) < 1e-6f || glm::abs(farWorldH.w) < 1e-6f)
+        if (glm::abs(nearWorldH.w) < 1e-12 || glm::abs(midWorldH.w) < 1e-12)
         {
             return Ray();
         }
 
-        glm::dvec3 nearWorld = glm::dvec3(nearWorldH) / static_cast<double>(nearWorldH.w);
-        glm::dvec3 farWorld  = glm::dvec3(farWorldH) / static_cast<double>(farWorldH.w);
+        glm::dvec3 nearWorld = glm::dvec3(nearWorldH) / nearWorldH.w;
+        glm::dvec3 midWorld  = glm::dvec3(midWorldH) / midWorldH.w;
 
-        return Ray(nearWorld, farWorld - nearWorld);
+        return Ray(nearWorld, midWorld - nearWorld);
     }
 
     const glm::dvec3& Ray::getOrigin() const
