@@ -385,6 +385,76 @@ namespace CADacomb::CAD
         }
     }
 
+    void ClusterBoundaryGraph::simplifyChain(ClusterBoundaryChain& chain, double toleranceSq)
+    {
+        if (chain.closedLoop)
+        {
+            if (chain.points.size() <= 4)
+            {
+                return;
+            }
+            size_t            n        = chain.points.size();
+            size_t            mid      = n / 2;
+            std::vector<bool> keepMask(n, false);
+            keepMask[0]   = true;
+            keepMask[mid] = true;
+            simplifyPolylineRange(chain.points, 0, mid, toleranceSq, keepMask);
+
+            std::vector<glm::dvec3> secondHalf;
+            secondHalf.reserve(n - mid + 1);
+            for (size_t i = mid; i < n; i++)
+            {
+                secondHalf.push_back(chain.points[i]);
+            }
+            secondHalf.push_back(chain.points[0]);
+            std::vector<bool> secondMask(secondHalf.size(), false);
+            secondMask[0]                     = true;
+            secondMask[secondHalf.size() - 1] = true;
+            simplifyPolylineRange(secondHalf, 0, secondHalf.size() - 1, toleranceSq, secondMask);
+
+            std::vector<glm::dvec3> simplified;
+            for (size_t i = 0; i <= mid; i++)
+            {
+                if (keepMask[i])
+                {
+                    simplified.push_back(chain.points[i]);
+                }
+            }
+            for (size_t i = 1; i + 1 < secondHalf.size(); i++)
+            {
+                if (secondMask[i])
+                {
+                    simplified.push_back(secondHalf[i]);
+                }
+            }
+            if (simplified.size() >= 3)
+            {
+                chain.points = simplified;
+            }
+        }
+        else
+        {
+            if (chain.points.size() <= 2)
+            {
+                return;
+            }
+            std::vector<bool> keepMask(chain.points.size(), false);
+            keepMask[0]                       = true;
+            keepMask[chain.points.size() - 1] = true;
+            simplifyPolylineRange(chain.points, 0, chain.points.size() - 1, toleranceSq, keepMask);
+
+            std::vector<glm::dvec3> simplified;
+            for (size_t i = 0; i < chain.points.size(); i++)
+            {
+                if (keepMask[i])
+                {
+                    simplified.push_back(chain.points[i]);
+                }
+            }
+            chain.points = simplified;
+        }
+    }
+
     void ClusterBoundaryGraph::simplifyChains(double chordTolerance)
     {
         if (chordTolerance <= 0.0)
@@ -395,72 +465,26 @@ namespace CADacomb::CAD
         double toleranceSq = chordTolerance * chordTolerance;
         for (size_t chainIndex = 0; chainIndex < chains.size(); chainIndex++)
         {
-            ClusterBoundaryChain& chain = chains[chainIndex];
-            if (chain.closedLoop)
+            simplifyChain(chains[chainIndex], toleranceSq);
+        }
+    }
+
+    void ClusterBoundaryGraph::simplifyPlanarChains(double chordTolerance, const std::vector<bool>& clusterIsPlanar)
+    {
+        if (chordTolerance <= 0.0)
+        {
+            return;
+        }
+
+        double toleranceSq = chordTolerance * chordTolerance;
+        for (size_t chainIndex = 0; chainIndex < chains.size(); chainIndex++)
+        {
+            ClusterBoundaryChain& chain    = chains[chainIndex];
+            bool                  aPlanar  = chain.clusterA < clusterIsPlanar.size() && clusterIsPlanar[chain.clusterA];
+            bool                  bPlanar  = chain.clusterB == SIZE_MAX || (chain.clusterB < clusterIsPlanar.size() && clusterIsPlanar[chain.clusterB]);
+            if (aPlanar && bPlanar)
             {
-                if (chain.points.size() <= 4)
-                {
-                    continue;
-                }
-                size_t            n        = chain.points.size();
-                size_t            mid      = n / 2;
-                std::vector<bool> keepMask(n, false);
-                keepMask[0]   = true;
-                keepMask[mid] = true;
-                simplifyPolylineRange(chain.points, 0, mid, toleranceSq, keepMask);
-
-                std::vector<glm::dvec3> secondHalf;
-                secondHalf.reserve(n - mid + 1);
-                for (size_t i = mid; i < n; i++)
-                {
-                    secondHalf.push_back(chain.points[i]);
-                }
-                secondHalf.push_back(chain.points[0]);
-                std::vector<bool> secondMask(secondHalf.size(), false);
-                secondMask[0]                     = true;
-                secondMask[secondHalf.size() - 1] = true;
-                simplifyPolylineRange(secondHalf, 0, secondHalf.size() - 1, toleranceSq, secondMask);
-
-                std::vector<glm::dvec3> simplified;
-                for (size_t i = 0; i <= mid; i++)
-                {
-                    if (keepMask[i])
-                    {
-                        simplified.push_back(chain.points[i]);
-                    }
-                }
-                for (size_t i = 1; i + 1 < secondHalf.size(); i++)
-                {
-                    if (secondMask[i])
-                    {
-                        simplified.push_back(secondHalf[i]);
-                    }
-                }
-                if (simplified.size() >= 3)
-                {
-                    chain.points = simplified;
-                }
-            }
-            else
-            {
-                if (chain.points.size() <= 2)
-                {
-                    continue;
-                }
-                std::vector<bool> keepMask(chain.points.size(), false);
-                keepMask[0]                       = true;
-                keepMask[chain.points.size() - 1] = true;
-                simplifyPolylineRange(chain.points, 0, chain.points.size() - 1, toleranceSq, keepMask);
-
-                std::vector<glm::dvec3> simplified;
-                for (size_t i = 0; i < chain.points.size(); i++)
-                {
-                    if (keepMask[i])
-                    {
-                        simplified.push_back(chain.points[i]);
-                    }
-                }
-                chain.points = simplified;
+                simplifyChain(chain, toleranceSq);
             }
         }
     }

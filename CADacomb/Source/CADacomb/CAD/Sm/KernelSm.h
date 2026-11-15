@@ -3,6 +3,7 @@
 #include "CADacomb/CAD/Interface/Kernel.h"
 
 class SmBrep;
+class SmSurface;
 
 namespace CADacomb::CAD
 {
@@ -32,6 +33,7 @@ namespace CADacomb::CAD
         void                                saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName) const override;
 
       private:
-        SmBrep* copyBrepFromShape(const Shape& shape) const;
+        SmBrep*                copyBrepFromShape(const Shape& shape) const;
+        std::unique_ptr<Shape> createFaceFromUVCurves(SmSurface* surface, const std::vector<std::vector<glm::dvec3>>& loops) const;
     };
 }

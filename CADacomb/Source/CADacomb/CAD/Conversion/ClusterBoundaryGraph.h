@@ -23,6 +23,7 @@ namespace CADacomb::CAD
         static ClusterBoundaryGraph build(const Triangulation& mesh, const std::vector<std::vector<size_t>>& clusters);
 
         void simplifyChains(double chordTolerance);
+        void simplifyPlanarChains(double chordTolerance, const std::vector<bool>& clusterIsPlanar);
 
         const std::vector<ClusterBoundaryChain>&              getChains() const;
         const std::vector<std::vector<ClusterLoopReference>>& getClusterLoops(size_t clusterIndex) const;
@@ -30,6 +31,7 @@ namespace CADacomb::CAD
         std::vector<std::vector<glm::dvec3>>                  buildClusterPointLoops(size_t clusterIndex) const;
 
       private:
+        static void simplifyChain(ClusterBoundaryChain& chain, double toleranceSq);
         static void simplifyPolylineRange(const std::vector<glm::dvec3>& points,
                                           size_t                         startIndex,
                                           size_t                         endIndex,

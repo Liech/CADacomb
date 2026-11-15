@@ -16,6 +16,7 @@
 #include <SmCylinder.h>
 #include <SmLine.h>
 #include <SmPoly.h>
+#include <cmath>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -123,6 +124,131 @@ namespace CADacomb::CAD
         return std::make_unique<SolidSm>(faceBrep);
     }
 
+    std::unique_ptr<Shape> KernelSm::createFaceFromUVCurves(SmSurface* surface, const std::vector<std::vector<glm::dvec3>>& loops) const
+    {
+        if (surface == nullptr)
+        {
+            throw std::runtime_error("KernelSm::createFaceFromUVCurves: null surface");
+        }
+
+        SmContext*  ctx      = SmApiGetOrCreateContext();
+        SmExtent2d  uvDomain = surface->GetNaturalUVDomain();
+        double      uSpan    = uvDomain.GetUMax() - uvDomain.GetUMin();
+
+        SmTArray<ULONG>           curveLoops;
+        SmTArray<SmBSplineCurve*> uvCurves;
+        SmTArray<SmOrientType>    orientations;
+
+        auto cleanup = [&]()
+        {
+            for (ULONG i = 0; i < uvCurves.GetSize(); i++)
+            {
+                delete uvCurves[i];
+            }
+        };
+
+        for (size_t loopIndex = 0; loopIndex < loops.size(); loopIndex++)
+        {
+            const std::vector<glm::dvec3>& loop = loops[loopIndex];
+            if (loop.size() < 3)
+            {
+                continue;
+            }
+
+            std::vector<SmPoint2d> uvPoints;
+            uvPoints.reserve(loop.size());
+
+            for (size_t pointIndex = 0; pointIndex < loop.size(); pointIndex++)
+            {
+                const glm::dvec3& pt           = loop[pointIndex];
+                SmBoolean         bSuccess     = FALSE;
+                SmPoint2d         uvResult(0.0, 0.0);
+                double            gap          = 0.0;
+                SmBoolean         isMultivalued = FALSE;
+                const SmPoint2d*  guessPtr     = uvPoints.empty() ? nullptr : &uvPoints.back();
+
+                surface->DropPoint(SmPoint3d(pt.x, pt.y, pt.z), uvDomain, guessPtr, bSuccess, uvResult, gap, isMultivalued, SM_SO_MINIMIZE);
+                if (!bSuccess && guessPtr != nullptr)
+                {
+                    surface->DropPoint(SmPoint3d(pt.x, pt.y, pt.z), uvDomain, nullptr, bSuccess, uvResult, gap, isMultivalued, SM_SO_MINIMIZE);
+                }
+                if (!bSuccess)
+                {
+                    cleanup();
+                    throw std::runtime_error("KernelSm::createFaceFromUVCurves: DropPoint failed");
+                }
+                uvPoints.push_back(uvResult);
+            }
+
+            ULONG loopCurveCount = 0;
+            for (size_t pointIndex = 0; pointIndex < uvPoints.size(); pointIndex++)
+            {
+                const SmPoint2d& uv0 = uvPoints[pointIndex];
+                const SmPoint2d& uv1 = uvPoints[(pointIndex + 1) % uvPoints.size()];
+
+                if (surface->IsPeriodic(uvDomain, SM_SP_U) && uSpan > 1e-10 && std::abs(uv1.x - uv0.x) > 0.5 * uSpan)
+                {
+                    cleanup();
+                    throw std::runtime_error("KernelSm::createFaceFromUVCurves: loop crosses periodic U seam");
+                }
+
+                if (std::hypot(uv1.x - uv0.x, uv1.y - uv0.y) < 1e-10)
+                {
+                    continue;
+                }
+
+                SmBSplineCurve* uvCurve   = nullptr;
+                SmStatus        segStatus = SmBSplineCurve::CreateLineSegment(*ctx, 2, SmPoint3d(uv0.x, uv0.y, 0.0), SmPoint3d(uv1.x, uv1.y, 0.0), uvCurve);
+                if (segStatus != SM_SUCCESS || uvCurve == nullptr)
+                {
+                    cleanup();
+                    SmPyRaise(segStatus, "SmBSplineCurve::CreateLineSegment", __FILE__, __LINE__);
+                }
+
+                uvCurves.Add(uvCurve);
+                orientations.Add(SM_OT_SAME);
+                loopCurveCount++;
+            }
+
+            if (loopCurveCount >= 3)
+            {
+                curveLoops.Add(loopCurveCount);
+            }
+            else
+            {
+                for (ULONG k = 0; k < loopCurveCount; k++)
+                {
+                    ULONG lastIdx = uvCurves.GetSize() - 1;
+                    delete uvCurves[lastIdx];
+                    uvCurves.RemoveAt(lastIdx);
+                    orientations.RemoveAt(lastIdx);
+                }
+            }
+        }
+
+        if (curveLoops.GetSize() == 0 || uvCurves.GetSize() < 3)
+        {
+            cleanup();
+            throw std::runtime_error("KernelSm::createFaceFromUVCurves: insufficient boundary segments");
+        }
+
+        SmBrep*             faceBrep = new (*ctx) SmBrep();
+        SmTArray<SmPoint3d> emptyLoopPoints;
+        SmRegion*          newRegion    = nullptr;
+        SmShell*           newShell     = nullptr;
+        SmFace*            newFace      = nullptr;
+        SmBoolean          useCrvOnSurf = TRUE;
+
+        SmStatus status = faceBrep->MakeFaceWithCurves(nullptr, curveLoops, nullptr, &uvCurves, orientations, emptyLoopPoints, surface, uvDomain, SM_OT_SAME, newRegion, newShell, newFace, &useCrvOnSurf);
+        if (status != SM_SUCCESS || newFace == nullptr)
+        {
+            delete faceBrep;
+            SmPyRaise(status, "SmBrep::MakeFaceWithCurves", __FILE__, __LINE__);
+        }
+
+        return std::make_unique<SolidSm>(faceBrep);
+    }
+
     std::unique_ptr<Shape> KernelSm::createBSplineFace(size_t numRows, size_t numCols, const std::vector<glm::dvec3>& controlPoints, const std::vector<std::vector<glm::dvec3>>& loops) const
     {
         if (numRows < 4 || numCols < 4 || controlPoints.size() != numRows * numCols)
@@ -144,74 +270,15 @@ namespace CADacomb::CAD
             SmPyRaise(status, "SmApiCreateSurface", __FILE__, __LINE__);
         }
 
-        SmTArray<ULONG>    curveLoops;
-        SmTArray<SmCurve*> curves3d;
-        for (size_t loopIndex = 0; loopIndex < loops.size(); loopIndex++)
+        try
         {
-            const std::vector<glm::dvec3>& loop = loops[loopIndex];
-            if (loop.size() < 3)
-            {
-                continue;
-            }
-
-            ULONG loopCurveCount = 0;
-            for (size_t pointIndex = 0; pointIndex < loop.size(); pointIndex++)
-            {
-                const glm::dvec3& startPt = loop[pointIndex];
-                const glm::dvec3& endPt   = loop[(pointIndex + 1) % loop.size()];
-                if (glm::length(endPt - startPt) < 1e-10)
-                {
-                    continue;
-                }
-
-                SmLine*  line       = nullptr;
-                SmStatus lineStatus = SmApiCreateLineSegment(SmPoint3d(startPt.x, startPt.y, startPt.z), SmPoint3d(endPt.x, endPt.y, endPt.z), line);
-                if (lineStatus != SM_SUCCESS || line == nullptr)
-                {
-                    delete surface;
-                    for (ULONG cleanupIndex = 0; cleanupIndex < curves3d.GetSize(); cleanupIndex++)
-                    {
-                        delete curves3d[cleanupIndex];
-                    }
-                    SmPyRaise(lineStatus, "SmApiCreateLineSegment", __FILE__, __LINE__);
-                }
-                curves3d.Add(line);
-                loopCurveCount++;
-            }
-
-            if (loopCurveCount >= 3)
-            {
-                curveLoops.Add(loopCurveCount);
-            }
-            else
-            {
-                for (ULONG k = 0; k < loopCurveCount; k++)
-                {
-                    ULONG lastIdx = curves3d.GetSize() - 1;
-                    delete curves3d[lastIdx];
-                    curves3d.RemoveAt(lastIdx);
-                }
-            }
+            return createFaceFromUVCurves(surface, loops);
         }
-
-        if (curveLoops.GetSize() == 0 || curves3d.GetSize() < 3)
+        catch (const std::exception&)
         {
             delete surface;
-            for (ULONG cleanupIndex = 0; cleanupIndex < curves3d.GetSize(); cleanupIndex++)
-            {
-                delete curves3d[cleanupIndex];
-            }
-            throw std::runtime_error("KernelSm::createBSplineFace: insufficient boundary segments");
+            throw;
         }
-
-        SmBrep* faceBrep = nullptr;
-        status           = SmApiTrimSurfaceWith3dCurves(surface, curveLoops, curves3d, faceBrep);
-        if (status != SM_SUCCESS || faceBrep == nullptr)
-        {
-            SmPyRaise(status, "SmApiTrimSurfaceWith3dCurves", __FILE__, __LINE__);
-        }
-
-        return std::make_unique<SolidSm>(faceBrep);
     }
 
     std::unique_ptr<Shape> KernelSm::createCylindricalFace(const glm::dvec3& origin, const glm::dvec3& axis, double radius, double height, const std::vector<std::vector<glm::dvec3>>& loops) const
@@ -227,12 +294,32 @@ namespace CADacomb::CAD
         glm::dvec3 xAxis    = glm::normalize(glm::cross(unitAxis, fallback));
         glm::dvec3 yAxis    = glm::normalize(glm::cross(unitAxis, xAxis));
 
-        // Extend cylinder slightly beyond loop bounds along axis so 3D boundary curves sit cleanly on the surface.
-        double     pad         = std::max(height * 0.05, 1e-3);
-        glm::dvec3 paddedOrig  = origin - pad * unitAxis;
-        double     paddedH     = height + 2.0 * pad;
+        // Extend cylinder slightly beyond loop bounds along axis so 3D/UV boundary curves sit cleanly on the surface.
+        double     pad        = std::max(height * 0.05, 1e-3);
+        glm::dvec3 paddedOrig = origin - pad * unitAxis;
+        double     paddedH    = height + 2.0 * pad;
 
-        SmContext*  ctx      = SmApiGetOrCreateContext();
+        SmContext* ctx = SmApiGetOrCreateContext();
+
+        try
+        {
+            SmCylinder* uvCylinder = new (ctx) SmCylinder(SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z),
+                                                          SmVector3d(xAxis.x, xAxis.y, xAxis.z),
+                                                          SmVector3d(yAxis.x, yAxis.y, yAxis.z),
+                                                          radius,
+                                                          0.0,
+                                                          360.0,
+                                                          paddedH,
+                                                          FALSE,
+                                                          FALSE,
+                                                          FALSE,
+                                                          ctx);
+            return createFaceFromUVCurves(uvCylinder, loops);
+        }
+        catch (const std::exception&)
+        {
+        }
+
         SmCylinder* cylinder = new (ctx) SmCylinder(SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z),
                                                     SmVector3d(xAxis.x, xAxis.y, xAxis.z),
                                                     SmVector3d(yAxis.x, yAxis.y, yAxis.z),
@@ -322,29 +409,26 @@ namespace CADacomb::CAD
             throw std::runtime_error("KernelSm::mergeShapes: no shapes provided");
         }
 
-        if (shapes.size() == 1)
+        SmBrep* assembledBrep = copyBrepFromShape(*shapes[0]);
+        for (size_t shapeIndex = 1; shapeIndex < shapes.size(); shapeIndex++)
         {
-            return std::make_unique<SolidSm>(copyBrepFromShape(*shapes[0]));
-        }
-
-        SmTArray<SmBrep*> breps;
-        for (size_t shapeIndex = 0; shapeIndex < shapes.size(); shapeIndex++)
-        {
-            breps.Add(copyBrepFromShape(*shapes[shapeIndex]));
-        }
-
-        SmBrep*  mergedBrep = nullptr;
-        SmStatus status     = SmApiMergeBreps(breps, SM_BO_MERGE, mergedBrep);
-        if (status != SM_SUCCESS || mergedBrep == nullptr)
-        {
-            for (ULONG brepIndex = 0; brepIndex < breps.GetSize(); brepIndex++)
+            const SolidSm& solid   = dynamic_cast<const SolidSm&>(*shapes[shapeIndex]);
+            const SmBrep*  srcBrep = solid.getBrep();
+            if (srcBrep == nullptr)
             {
-                smlibpy::delete_brep(breps[brepIndex]);
+                smlibpy::delete_brep(assembledBrep);
+                throw std::runtime_error("KernelSm::mergeShapes: null BRep in shape");
             }
-            SmPyRaise(status, "SmApiMergeBreps", __FILE__, __LINE__);
+
+            SmStatus status = assembledBrep->MergeBrep(*srcBrep, nullptr, nullptr, FALSE);
+            if (status != SM_SUCCESS)
+            {
+                smlibpy::delete_brep(assembledBrep);
+                SmPyRaise(status, "SmBrep::MergeBrep", __FILE__, __LINE__);
+            }
         }
 
-        return std::make_unique<SolidSm>(mergedBrep);
+        return std::make_unique<SolidSm>(assembledBrep);
     }
 
     std::unique_ptr<Shape> KernelSm::stitch(const Shape& shape, double tolerance, bool tryMakeSolid) const

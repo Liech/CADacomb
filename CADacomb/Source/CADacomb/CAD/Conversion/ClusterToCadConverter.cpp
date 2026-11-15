@@ -146,8 +146,17 @@ namespace CADacomb::CAD
 
         std::vector<std::vector<size_t>> refinedClusters = splitWideAngleClusters(mesh, clusters, planarityTolerance);
 
+        std::vector<PlanarSurfaceFit> planarFits;
+        planarFits.reserve(refinedClusters.size());
+        std::vector<bool> clusterIsPlanar(refinedClusters.size(), false);
+        for (size_t i = 0; i < refinedClusters.size(); i++)
+        {
+            planarFits.push_back(PlanarSurfaceFit::fit(mesh, refinedClusters[i]));
+            clusterIsPlanar[i] = planarFits.back().isValid() && planarFits.back().getMaxDeviation() <= planarityTolerance;
+        }
+
         ClusterBoundaryGraph graph = ClusterBoundaryGraph::build(mesh, refinedClusters);
-        graph.simplifyChains(boundarySimplifyTolerance);
+        graph.simplifyPlanarChains(boundarySimplifyTolerance, clusterIsPlanar);
 
         std::vector<std::unique_ptr<Shape>> faceShapes;
         faceShapes.reserve(refinedClusters.size());
@@ -160,12 +169,11 @@ namespace CADacomb::CAD
                 continue;
             }
 
-            PlanarSurfaceFit planarFit = PlanarSurfaceFit::fit(mesh, refinedClusters[clusterIndex]);
-            if (planarFit.isValid() && planarFit.getMaxDeviation() <= planarityTolerance)
+            if (clusterIsPlanar[clusterIndex])
             {
                 try
                 {
-                    faceShapes.push_back(kernel.createPlanarFace(planarFit.getOrigin(), planarFit.getNormal(), loops));
+                    faceShapes.push_back(kernel.createPlanarFace(planarFits[clusterIndex].getOrigin(), planarFits[clusterIndex].getNormal(), loops));
                     continue;
                 }
                 catch (const std::exception&)
