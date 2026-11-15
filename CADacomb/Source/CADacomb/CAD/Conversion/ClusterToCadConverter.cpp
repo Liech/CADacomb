@@ -3,6 +3,7 @@
 #include "CADacomb/CAD/Interface/Kernel.h"
 #include "CADacomb/CAD/Interface/Shape.h"
 #include "CADacomb/Triangle/Triangulation.h"
+#include "BoundaryChainRefiner.h"
 #include "ClusterBoundaryGraph.h"
 #include "ConeSurfaceFit.h"
 #include "CylinderSurfaceFit.h"
@@ -232,6 +233,7 @@ namespace CADacomb::CAD
         }
 
         ClusterBoundaryGraph graph = ClusterBoundaryGraph::build(mesh, refinedClusters);
+        BoundaryChainRefiner::refine(graph, clusterKind, planarFits, cylinderFits, coneFits, sphereFits, analyticalTolerance * 2.0);
         graph.simplifyPlanarChains(boundarySimplifyTolerance, clusterIsPlanar);
 
         std::vector<std::unique_ptr<Shape>> faceShapes;

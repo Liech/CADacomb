@@ -24,6 +24,7 @@ namespace CADacomb::CAD
 
         void simplifyChains(double chordTolerance);
         void simplifyPlanarChains(double chordTolerance, const std::vector<bool>& clusterIsPlanar);
+        void setChainPoints(size_t chainIndex, const std::vector<glm::dvec3>& points);
 
         const std::vector<ClusterBoundaryChain>&              getChains() const;
         const std::vector<std::vector<ClusterLoopReference>>& getClusterLoops(size_t clusterIndex) const;

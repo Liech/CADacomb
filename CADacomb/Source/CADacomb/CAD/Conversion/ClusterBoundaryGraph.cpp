@@ -489,6 +489,11 @@ namespace CADacomb::CAD
         }
     }
 
+    void ClusterBoundaryGraph::setChainPoints(size_t chainIndex, const std::vector<glm::dvec3>& points)
+    {
+        chains[chainIndex].points = points;
+    }
+
     const std::vector<ClusterBoundaryChain>& ClusterBoundaryGraph::getChains() const
     {
         return chains;

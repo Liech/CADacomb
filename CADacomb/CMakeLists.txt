@@ -92,6 +92,8 @@ set(CAD_Sm_Files
 source_group("Source/CAD/Sm" FILES ${CAD_Sm_Files})
 
 set(CAD_Conversion_Files
+    "Source/CADacomb/CAD/Conversion/BoundaryChainRefiner.h"
+    "Source/CADacomb/CAD/Conversion/BoundaryChainRefiner.cpp"
     "Source/CADacomb/CAD/Conversion/ClusterBoundaryChain.h"
     "Source/CADacomb/CAD/Conversion/ClusterBoundaryChain.cpp"
     "Source/CADacomb/CAD/Conversion/ClusterBoundaryGraph.h"
