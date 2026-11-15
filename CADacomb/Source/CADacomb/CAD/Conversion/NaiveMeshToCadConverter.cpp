@@ -3,6 +3,7 @@
 #include "CADacomb/CAD/Interface/Kernel.h"
 #include "CADacomb/CAD/Interface/Shape.h"
 #include "CADacomb/Triangle/Triangulation.h"
+#include "CADacomb/Util/ProgressBar.h"
 
 #include <glm/glm.hpp>
 #include <stdexcept>
@@ -21,27 +22,38 @@ namespace CADacomb::CAD
             throw std::runtime_error("NaiveMeshToCadConverter::convert: triangulation is empty");
         }
 
+        ProgressBar                         mainBar(4, "Converting triangles to CAD");
         size_t                              triangleCount = mesh.indices.size() / 3;
         std::vector<std::unique_ptr<Shape>> faceShapes;
         faceShapes.reserve(triangleCount);
 
-        for (size_t i = 0; i < triangleCount; i++)
         {
-            const glm::dvec3& p0 = mesh.vertices[mesh.indices[i * 3 + 0]];
-            const glm::dvec3& p1 = mesh.vertices[mesh.indices[i * 3 + 1]];
-            const glm::dvec3& p2 = mesh.vertices[mesh.indices[i * 3 + 2]];
-
-            glm::dvec3 crossVec = glm::cross(p1 - p0, p2 - p0);
-            double     len      = glm::length(crossVec);
-            if (len < 1e-12)
+            ProgressBar faceBar(triangleCount, "Creating triangle CAD faces");
+            for (size_t i = 0; i < triangleCount; i++)
             {
-                continue;
-            }
+                if (faceBar.isCanceled())
+                {
+                    throw std::runtime_error("NaiveMeshToCadConverter::convert: canceled");
+                }
+                faceBar.addProgress(1);
 
-            glm::dvec3                           normal = crossVec / len;
-            std::vector<std::vector<glm::dvec3>> loops  = { { p0, p1, p2 } };
-            faceShapes.push_back(kernel.createPlanarFace(p0, normal, loops));
+                const glm::dvec3& p0 = mesh.vertices[mesh.indices[i * 3 + 0]];
+                const glm::dvec3& p1 = mesh.vertices[mesh.indices[i * 3 + 1]];
+                const glm::dvec3& p2 = mesh.vertices[mesh.indices[i * 3 + 2]];
+
+                glm::dvec3 crossVec = glm::cross(p1 - p0, p2 - p0);
+                double     len      = glm::length(crossVec);
+                if (len < 1e-12)
+                {
+                    continue;
+                }
+
+                glm::dvec3                           normal = crossVec / len;
+                std::vector<std::vector<glm::dvec3>> loops  = { { p0, p1, p2 } };
+                faceShapes.push_back(kernel.createPlanarFace(p0, normal, loops));
+            }
         }
+        mainBar.addProgress(1);
 
         if (faceShapes.empty())
         {
@@ -55,9 +67,12 @@ namespace CADacomb::CAD
             facePtrs.push_back(faceShapes[i].get());
         }
 
-        std::unique_ptr<Shape> merged   = kernel.mergeShapes(facePtrs);
+        std::unique_ptr<Shape> merged = kernel.mergeShapes(facePtrs);
+        mainBar.addProgress(1);
         std::unique_ptr<Shape> stitched = kernel.stitch(*merged, stitchTolerance, tryMakeSolid);
+        mainBar.addProgress(1);
         kernel.unifyNormals(*stitched);
+        mainBar.addProgress(1);
         return stitched;
     }
 }

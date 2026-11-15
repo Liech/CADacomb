@@ -3,6 +3,7 @@
 #include "CADacomb/CAD/Interface/Kernel.h"
 #include "CADacomb/CAD/Interface/Shape.h"
 #include "CADacomb/Triangle/Triangulation.h"
+#include "CADacomb/Util/ProgressBar.h"
 #include "BoundaryChainRefiner.h"
 #include "ClusterBoundaryGraph.h"
 #include "ConeSurfaceFit.h"
@@ -147,6 +148,8 @@ namespace CADacomb::CAD
             throw std::runtime_error("ClusterToCadConverter::convert: no clusters provided");
         }
 
+        ProgressBar mainBar(6, "Converting clusters to CAD");
+
         double analyticalTolerance = std::max(planarityTolerance * 10.0, 1e-2);
 
         std::vector<std::vector<size_t>> refinedClusters;
@@ -157,13 +160,20 @@ namespace CADacomb::CAD
         std::vector<SphereSurfaceFit>    sphereFits;
         std::vector<int>                 clusterKind; // 0 = planar, 1 = cylinder, 2 = cone, 3 = sphere, 4 = freeform
 
-        for (size_t i = 0; i < clusters.size(); i++)
         {
-            const std::vector<size_t>& cluster = clusters[i];
-            if (cluster.empty())
+            ProgressBar fitBar(clusters.size(), "Fitting cluster surfaces");
+            for (size_t i = 0; i < clusters.size(); i++)
             {
-                continue;
-            }
+                if (fitBar.isCanceled())
+                {
+                    throw std::runtime_error("ClusterToCadConverter::convert: canceled");
+                }
+                fitBar.addProgress(1);
+                const std::vector<size_t>& cluster = clusters[i];
+                if (cluster.empty())
+                {
+                    continue;
+                }
 
             PlanarSurfaceFit planarFit = PlanarSurfaceFit::fit(mesh, cluster);
             if (planarFit.isValid() && planarFit.getMaxDeviation() <= planarityTolerance)
@@ -230,18 +240,29 @@ namespace CADacomb::CAD
                 coneFits.emplace_back();
                 sphereFits.emplace_back();
             }
+            }
         }
+        mainBar.addProgress(1);
 
         ClusterBoundaryGraph graph = ClusterBoundaryGraph::build(mesh, refinedClusters);
         BoundaryChainRefiner::refine(graph, clusterKind, planarFits, cylinderFits, coneFits, sphereFits, analyticalTolerance * 2.0);
+        mainBar.addProgress(1);
         graph.simplifyPlanarChains(boundarySimplifyTolerance, clusterIsPlanar);
+        mainBar.addProgress(1);
 
         std::vector<std::unique_ptr<Shape>> faceShapes;
         faceShapes.reserve(refinedClusters.size());
 
-        for (size_t clusterIndex = 0; clusterIndex < refinedClusters.size(); clusterIndex++)
         {
-            std::vector<std::vector<glm::dvec3>> loops = graph.buildClusterPointLoops(clusterIndex);
+            ProgressBar faceBar(refinedClusters.size(), "Creating CAD faces");
+            for (size_t clusterIndex = 0; clusterIndex < refinedClusters.size(); clusterIndex++)
+            {
+                if (faceBar.isCanceled())
+                {
+                    throw std::runtime_error("ClusterToCadConverter::convert: canceled");
+                }
+                faceBar.addProgress(1);
+                std::vector<std::vector<glm::dvec3>> loops = graph.buildClusterPointLoops(clusterIndex);
             if (loops.empty())
             {
                 continue;
@@ -322,7 +343,9 @@ namespace CADacomb::CAD
                 }
                 faceShapes.push_back(kernel.createPlanarFace(p0, crossVec / len, { { p0, p1, p2 } }));
             }
+            }
         }
+        mainBar.addProgress(1);
 
         if (faceShapes.empty())
         {
@@ -336,9 +359,11 @@ namespace CADacomb::CAD
             facePtrs.push_back(faceShapes[i].get());
         }
 
-        std::unique_ptr<Shape> merged   = kernel.mergeShapes(facePtrs);
+        std::unique_ptr<Shape> merged = kernel.mergeShapes(facePtrs);
+        mainBar.addProgress(1);
         std::unique_ptr<Shape> stitched = kernel.stitch(*merged, stitchTolerance, tryMakeSolid);
         kernel.unifyNormals(*stitched);
+        mainBar.addProgress(1);
         return stitched;
     }
 
@@ -355,28 +380,42 @@ namespace CADacomb::CAD
             throw std::runtime_error("ClusterToCadConverter::convertPlanar: no clusters provided");
         }
 
+        ProgressBar mainBar(5, "Converting planar clusters to CAD");
+
         ClusterBoundaryGraph graph = ClusterBoundaryGraph::build(mesh, clusters);
+        mainBar.addProgress(1);
         graph.simplifyChains(boundarySimplifyTolerance);
+        mainBar.addProgress(1);
 
         std::vector<std::unique_ptr<Shape>> faceShapes;
         faceShapes.reserve(clusters.size());
 
-        for (size_t clusterIndex = 0; clusterIndex < clusters.size(); clusterIndex++)
         {
-            PlanarSurfaceFit fit = PlanarSurfaceFit::fit(mesh, clusters[clusterIndex]);
-            if (!fit.isValid() || fit.getMaxDeviation() > planarityTolerance)
+            ProgressBar faceBar(clusters.size(), "Creating planar CAD faces");
+            for (size_t clusterIndex = 0; clusterIndex < clusters.size(); clusterIndex++)
             {
-                continue;
-            }
+                if (faceBar.isCanceled())
+                {
+                    throw std::runtime_error("ClusterToCadConverter::convertPlanar: canceled");
+                }
+                faceBar.addProgress(1);
 
-            std::vector<std::vector<glm::dvec3>> loops = graph.buildClusterPointLoops(clusterIndex);
-            if (loops.empty())
-            {
-                continue;
-            }
+                PlanarSurfaceFit fit = PlanarSurfaceFit::fit(mesh, clusters[clusterIndex]);
+                if (!fit.isValid() || fit.getMaxDeviation() > planarityTolerance)
+                {
+                    continue;
+                }
 
-            faceShapes.push_back(kernel.createPlanarFace(fit.getOrigin(), fit.getNormal(), loops));
+                std::vector<std::vector<glm::dvec3>> loops = graph.buildClusterPointLoops(clusterIndex);
+                if (loops.empty())
+                {
+                    continue;
+                }
+
+                faceShapes.push_back(kernel.createPlanarFace(fit.getOrigin(), fit.getNormal(), loops));
+            }
         }
+        mainBar.addProgress(1);
 
         if (faceShapes.empty())
         {
@@ -390,9 +429,11 @@ namespace CADacomb::CAD
             facePtrs.push_back(faceShapes[i].get());
         }
 
-        std::unique_ptr<Shape> merged   = kernel.mergeShapes(facePtrs);
+        std::unique_ptr<Shape> merged = kernel.mergeShapes(facePtrs);
+        mainBar.addProgress(1);
         std::unique_ptr<Shape> stitched = kernel.stitch(*merged, stitchTolerance, tryMakeSolid);
         kernel.unifyNormals(*stitched);
+        mainBar.addProgress(1);
         return stitched;
     }
 }
