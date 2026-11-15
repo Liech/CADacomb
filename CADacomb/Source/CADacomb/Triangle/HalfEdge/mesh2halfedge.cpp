@@ -1,5 +1,7 @@
 #include "mesh2halfedge.h"
 
+#include "CADacomb/Util/ProgressBar.h"
+
 #include <set>
 
 namespace CADacomb
@@ -11,7 +13,8 @@ namespace CADacomb
 
     std::unique_ptr<HalfEdgeMesh> mesh2halfedge::convert(const Triangulation& tri)
     {
-        auto mesh = std::make_unique<HalfEdgeMesh>();
+        ProgressBar bar(3, "Converting triangulation to half-edge mesh");
+        auto        mesh = std::make_unique<HalfEdgeMesh>();
 
         // 1. Initialize Vertices
         for (const auto& pos : tri.vertices)
@@ -21,125 +24,157 @@ namespace CADacomb
 
         // 1. Initialize Edges
         std::map<std::pair<int64_t, int64_t>, int64_t> edgeMap;
-        for (size_t i = 0; i < tri.indices.size(); i += 3)
         {
-            int64_t v[3] = { static_cast<int64_t>(tri.indices[i]), static_cast<int64_t>(tri.indices[i + 1]), static_cast<int64_t>(tri.indices[i + 2]) };
-
-            if (v[0] == v[1] || v[1] == v[2] || v[0] == v[2])
-                continue;
-
-            int64_t face_index = static_cast<int64_t>(mesh->faces.size());
-            mesh->faces.push_back(Face());
-
-            auto a             = std::make_pair(v[0], v[1]);
-            auto b             = std::make_pair(v[1], v[2]);
-            auto c             = std::make_pair(v[2], v[0]);
-            auto a_twin        = std::make_pair(v[1], v[0]);
-            auto b_twin        = std::make_pair(v[2], v[1]);
-            auto c_twin        = std::make_pair(v[0], v[2]);
-            auto search_a      = edgeMap.find(a);
-            auto search_b      = edgeMap.find(b);
-            auto search_c      = edgeMap.find(c);
-            auto search_a_twin = edgeMap.find(a_twin);
-            auto search_b_twin = edgeMap.find(b_twin);
-            auto search_c_twin = edgeMap.find(c_twin);
-
-            if (search_a == edgeMap.end())
+            ProgressBar faceBar(tri.indices.size() / 3, "Creating half-edge faces");
+            for (size_t i = 0; i < tri.indices.size(); i += 3)
             {
-                edgeMap[a] = mesh->half_edges.size();
-                mesh->half_edges.push_back(HalfEdge());
-            }
-            if (search_b == edgeMap.end())
-            {
-                edgeMap[b] = mesh->half_edges.size();
-                mesh->half_edges.push_back(HalfEdge());
-            }
-            if (search_c == edgeMap.end())
-            {
-                edgeMap[c] = mesh->half_edges.size();
-                mesh->half_edges.push_back(HalfEdge());
-            }
-            if (search_a_twin == edgeMap.end())
-            {
-                edgeMap[a_twin] = mesh->half_edges.size();
-                mesh->half_edges.push_back(HalfEdge());
-            }
-            if (search_b_twin == edgeMap.end())
-            {
-                edgeMap[b_twin] = mesh->half_edges.size();
-                mesh->half_edges.push_back(HalfEdge());
-            }
-            if (search_c_twin == edgeMap.end())
-            {
-                edgeMap[c_twin] = mesh->half_edges.size();
-                mesh->half_edges.push_back(HalfEdge());
-            }
+                if (faceBar.isCanceled())
+                {
+                    return nullptr;
+                }
 
-            int64_t a_index      = edgeMap[a];
-            int64_t b_index      = edgeMap[b];
-            int64_t c_index      = edgeMap[c];
-            int64_t a_twin_index = edgeMap[a_twin];
-            int64_t b_twin_index = edgeMap[b_twin];
-            int64_t c_twin_index = edgeMap[c_twin];
+                int64_t v[3] = { static_cast<int64_t>(tri.indices[i]), static_cast<int64_t>(tri.indices[i + 1]), static_cast<int64_t>(tri.indices[i + 2]) };
 
-            auto& a_edge      = mesh->half_edges[a_index];
-            auto& b_edge      = mesh->half_edges[b_index];
-            auto& c_edge      = mesh->half_edges[c_index];
-            auto& a_twin_edge = mesh->half_edges[a_twin_index];
-            auto& b_twin_edge = mesh->half_edges[b_twin_index];
-            auto& c_twin_edge = mesh->half_edges[c_twin_index];
+                if (v[0] == v[1] || v[1] == v[2] || v[0] == v[2])
+                {
+                    faceBar.addProgress(1);
+                    continue;
+                }
 
-            a_edge.face = face_index;
-            b_edge.face = face_index;
-            c_edge.face = face_index;
-            a_edge.next = b_index;
-            b_edge.next = c_index;
-            c_edge.next = a_index;
+                int64_t face_index = static_cast<int64_t>(mesh->faces.size());
+                mesh->faces.push_back(Face());
 
-            a_edge.target_vertex      = v[1];
-            b_edge.target_vertex      = v[2];
-            c_edge.target_vertex      = v[0];
-            a_edge.twin               = a_twin_index;
-            b_edge.twin               = b_twin_index;
-            c_edge.twin               = c_twin_index;
-            a_twin_edge.target_vertex = v[0];
-            b_twin_edge.target_vertex = v[1];
-            c_twin_edge.target_vertex = v[2];
-            a_twin_edge.twin          = a_index;
-            b_twin_edge.twin          = b_index;
-            c_twin_edge.twin          = c_index;
+                auto a             = std::make_pair(v[0], v[1]);
+                auto b             = std::make_pair(v[1], v[2]);
+                auto c             = std::make_pair(v[2], v[0]);
+                auto a_twin        = std::make_pair(v[1], v[0]);
+                auto b_twin        = std::make_pair(v[2], v[1]);
+                auto c_twin        = std::make_pair(v[0], v[2]);
+                auto search_a      = edgeMap.find(a);
+                auto search_b      = edgeMap.find(b);
+                auto search_c      = edgeMap.find(c);
+                auto search_a_twin = edgeMap.find(a_twin);
+                auto search_b_twin = edgeMap.find(b_twin);
+                auto search_c_twin = edgeMap.find(c_twin);
 
-            mesh->faces.back().half_edge   = a_index;
-            mesh->vertices[v[0]].half_edge = a_index;
-            mesh->vertices[v[1]].half_edge = b_index;
-            mesh->vertices[v[2]].half_edge = c_index;
+                if (search_a == edgeMap.end())
+                {
+                    edgeMap[a] = mesh->half_edges.size();
+                    mesh->half_edges.push_back(HalfEdge());
+                }
+                if (search_b == edgeMap.end())
+                {
+                    edgeMap[b] = mesh->half_edges.size();
+                    mesh->half_edges.push_back(HalfEdge());
+                }
+                if (search_c == edgeMap.end())
+                {
+                    edgeMap[c] = mesh->half_edges.size();
+                    mesh->half_edges.push_back(HalfEdge());
+                }
+                if (search_a_twin == edgeMap.end())
+                {
+                    edgeMap[a_twin] = mesh->half_edges.size();
+                    mesh->half_edges.push_back(HalfEdge());
+                }
+                if (search_b_twin == edgeMap.end())
+                {
+                    edgeMap[b_twin] = mesh->half_edges.size();
+                    mesh->half_edges.push_back(HalfEdge());
+                }
+                if (search_c_twin == edgeMap.end())
+                {
+                    edgeMap[c_twin] = mesh->half_edges.size();
+                    mesh->half_edges.push_back(HalfEdge());
+                }
+
+                int64_t a_index      = edgeMap[a];
+                int64_t b_index      = edgeMap[b];
+                int64_t c_index      = edgeMap[c];
+                int64_t a_twin_index = edgeMap[a_twin];
+                int64_t b_twin_index = edgeMap[b_twin];
+                int64_t c_twin_index = edgeMap[c_twin];
+
+                auto& a_edge      = mesh->half_edges[a_index];
+                auto& b_edge      = mesh->half_edges[b_index];
+                auto& c_edge      = mesh->half_edges[c_index];
+                auto& a_twin_edge = mesh->half_edges[a_twin_index];
+                auto& b_twin_edge = mesh->half_edges[b_twin_index];
+                auto& c_twin_edge = mesh->half_edges[c_twin_index];
+
+                a_edge.face = face_index;
+                b_edge.face = face_index;
+                c_edge.face = face_index;
+                a_edge.next = b_index;
+                b_edge.next = c_index;
+                c_edge.next = a_index;
+
+                a_edge.target_vertex      = v[1];
+                b_edge.target_vertex      = v[2];
+                c_edge.target_vertex      = v[0];
+                a_edge.twin               = a_twin_index;
+                b_edge.twin               = b_twin_index;
+                c_edge.twin               = c_twin_index;
+                a_twin_edge.target_vertex = v[0];
+                b_twin_edge.target_vertex = v[1];
+                c_twin_edge.target_vertex = v[2];
+                a_twin_edge.twin          = a_index;
+                b_twin_edge.twin          = b_index;
+                c_twin_edge.twin          = c_index;
+
+                mesh->faces.back().half_edge   = a_index;
+                mesh->vertices[v[0]].half_edge = a_index;
+                mesh->vertices[v[1]].half_edge = b_index;
+                mesh->vertices[v[2]].half_edge = c_index;
+
+                faceBar.addProgress(1);
+            }
         }
+        bar.addProgress(1);
 
         std::map<int64_t, std::vector<int64_t>> vertex2edges;
 
         std::set<int64_t> someonePointsAt;
 
-        for (size_t i = 0; i < mesh->half_edges.size(); i++)
         {
-            auto& edge = mesh->half_edges[i];
-            auto& twin = mesh->half_edges[edge.twin];
-            vertex2edges[twin.target_vertex].push_back(i);
-            someonePointsAt.insert(edge.next);
-        }
-
-        for (size_t i = 0; i < mesh->half_edges.size(); i++)
-        {
-            auto& edge = mesh->half_edges[i];
-            if (edge.next == SafeNull)
+            ProgressBar indexBar(mesh->half_edges.size(), "Indexing half-edges");
+            for (size_t i = 0; i < mesh->half_edges.size(); i++)
             {
-                const auto& list = vertex2edges[edge.target_vertex];
-                for (const auto& x : list)
+                if (indexBar.isCanceled())
                 {
-                    if (!someonePointsAt.contains(x))
-                        edge.next = x;
+                    return nullptr;
                 }
+                auto& edge = mesh->half_edges[i];
+                auto& twin = mesh->half_edges[edge.twin];
+                vertex2edges[twin.target_vertex].push_back(i);
+                someonePointsAt.insert(edge.next);
+                indexBar.addProgress(1);
             }
         }
+        bar.addProgress(1);
+
+        {
+            ProgressBar linkBar(mesh->half_edges.size(), "Linking boundary half-edges");
+            for (size_t i = 0; i < mesh->half_edges.size(); i++)
+            {
+                if (linkBar.isCanceled())
+                {
+                    return nullptr;
+                }
+                auto& edge = mesh->half_edges[i];
+                if (edge.next == SafeNull)
+                {
+                    const auto& list = vertex2edges[edge.target_vertex];
+                    for (const auto& x : list)
+                    {
+                        if (!someonePointsAt.contains(x))
+                            edge.next = x;
+                    }
+                }
+                linkBar.addProgress(1);
+            }
+        }
+        bar.addProgress(1);
 
         return mesh;
     }

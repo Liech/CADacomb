@@ -1,13 +1,16 @@
 #include "Clustering.h"
 
 #include "CADacomb/Triangle/HalfEdge/HalfEdge.h"
+#include "CADacomb/Triangle/HalfEdge/HalfEdgeHealth.h"
 #include "CADacomb/Triangle/HalfEdge/mesh2halfedge.h"
 #include "CADacomb/Triangle/Triangulation.h"
+#include "CADacomb/Util/ProgressBar.h"
 #include <algorithm>
 #include <cassert>
 #include <map>
 #include <queue>
 #include <set>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -17,59 +20,97 @@ namespace CADacomb
 
     Clustering::~Clustering() {}
 
+    std::vector<std::vector<size_t>> Clustering::clusterByNormal(const Triangulation& tri, double normalDotThreshold, bool withoutHoles)
+    {
+        auto growFunction = [normalDotThreshold](size_t currentIndex, size_t candidateIndex, const Triangulation& mesh) -> bool
+        {
+            glm::dvec3 curr = mesh.getFaceNormal(currentIndex);
+            glm::dvec3 cand = mesh.getFaceNormal(candidateIndex);
+            return glm::dot(curr, cand) > normalDotThreshold;
+        };
+
+        if (withoutHoles)
+        {
+            return clusterWithoutHoles(tri, growFunction);
+        }
+
+        return cluster(tri, growFunction);
+    }
+
     std::vector<std::vector<size_t>> Clustering::cluster(const Triangulation& tri, std::function<bool(size_t currentIndex, size_t candidateIndex, const Triangulation&)> growFunction)
     {
+        ProgressBar                                              clusterBar(2, "Clustering triangles");
         size_t                                                   numTriangles = tri.indices.size() / 3;
         std::vector<std::vector<size_t>>                         result;
         std::map<std::pair<size_t, size_t>, std::vector<size_t>> adjacency = tri.getAdjacency();
-        std::vector<bool>                                        visited(numTriangles, false);
-        for (size_t i = 0; i < numTriangles; i++)
+        if (clusterBar.isCanceled())
         {
-            if (visited[i])
-                continue;
+            return {};
+        }
+        clusterBar.addProgress(1);
 
-            std::vector<size_t> currentPatch;
-            std::queue<size_t>  processQueue;
-
-            processQueue.push(i);
-            visited[i] = true;
-
-            while (!processQueue.empty())
+        std::vector<bool> visited(numTriangles, false);
+        {
+            ProgressBar growBar(numTriangles, "Growing triangle clusters");
+            for (size_t i = 0; i < numTriangles; i++)
             {
-                size_t currIdx = processQueue.front();
-                processQueue.pop();
-                currentPatch.push_back(currIdx);
-
-                size_t v[3] = { tri.indices[currIdx * 3 + 0], tri.indices[currIdx * 3 + 1], tri.indices[currIdx * 3 + 2] };
-
-                std::pair<size_t, size_t> edges[3] = {
-                    { v[0], v[1] },
-                    { v[1], v[2] },
-                    { v[2], v[0] }
-                };
-
-                for (auto& edge : edges)
+                if (growBar.isCanceled())
                 {
-                    auto key = (edge.first < edge.second) ? std::make_pair(edge.first, edge.second) : std::make_pair(edge.second, edge.first);
+                    return {};
+                }
+                if (visited[i])
+                    continue;
 
-                    if (adjacency.count(key))
+                std::vector<size_t> currentPatch;
+                std::queue<size_t>  processQueue;
+
+                processQueue.push(i);
+                visited[i] = true;
+                growBar.addProgress(1);
+
+                while (!processQueue.empty())
+                {
+                    if (growBar.isCanceled())
                     {
-                        for (size_t neighborIdx : adjacency[key])
+                        return {};
+                    }
+                    size_t currIdx = processQueue.front();
+                    processQueue.pop();
+                    currentPatch.push_back(currIdx);
+
+                    size_t v[3] = { tri.indices[currIdx * 3 + 0], tri.indices[currIdx * 3 + 1], tri.indices[currIdx * 3 + 2] };
+
+                    std::pair<size_t, size_t> edges[3] = {
+                        { v[0], v[1] },
+                        { v[1], v[2] },
+                        { v[2], v[0] }
+                    };
+
+                    for (auto& edge : edges)
+                    {
+                        auto key = (edge.first < edge.second) ? std::make_pair(edge.first, edge.second) : std::make_pair(edge.second, edge.first);
+
+                        if (adjacency.count(key))
                         {
-                            if (!visited[neighborIdx])
+                            for (size_t neighborIdx : adjacency[key])
                             {
-                                if (growFunction(currIdx, neighborIdx, tri))
+                                if (!visited[neighborIdx])
                                 {
-                                    visited[neighborIdx] = true;
-                                    processQueue.push(neighborIdx);
+                                    if (growFunction(currIdx, neighborIdx, tri))
+                                    {
+                                        visited[neighborIdx] = true;
+                                        processQueue.push(neighborIdx);
+                                        growBar.addProgress(1);
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                result.push_back(currentPatch);
             }
-            result.push_back(currentPatch);
         }
+        clusterBar.addProgress(1);
 
         return result;
     }
@@ -219,30 +260,54 @@ namespace CADacomb
 
     std::vector<std::vector<size_t>> Clustering::clusterWithoutHoles(const Triangulation& tri, std::function<bool(size_t currentIndex, size_t candidateIndex, const Triangulation&)> growFunction)
     {
+        ProgressBar                      noHolesBar(3, "Clustering without holes");
         std::vector<std::vector<size_t>> clusters = cluster(tri, growFunction);
+        if (noHolesBar.isCanceled())
+        {
+            return {};
+        }
+        noHolesBar.addProgress(1);
+
         std::vector<std::vector<size_t>> result;
         auto                             halfedge = mesh2halfedge::convert(tri);
-        std::queue<std::vector<size_t>>  todo;
+        if (!halfedge || noHolesBar.isCanceled())
+        {
+            return {};
+        }
+        noHolesBar.addProgress(1);
+
+        std::queue<std::vector<size_t>> todo;
         for (const auto& x : clusters)
             todo.push(x);
 
-        while (!todo.empty())
         {
-            auto currentCluster = todo.front();
-            todo.pop();
-
-            std::vector<std::vector<size_t>> borders = findBorders(*halfedge, currentCluster);
-
-            if (borders.size() <= 1)
-                result.push_back(currentCluster);
-            else
+            ProgressBar splitBar(tri.indices.size() / 3, "Splitting holed clusters");
+            while (!todo.empty())
             {
-                std::sort(borders.begin(), borders.end(), [](const std::vector<size_t>& a, const std::vector<size_t>& b) { return a.size() < b.size(); });
-                auto newClusters = splitCluster(tri, currentCluster, borders[0]);
-                for (const auto& x : newClusters)
-                    todo.push(x);
+                if (splitBar.isCanceled())
+                {
+                    return {};
+                }
+                auto currentCluster = todo.front();
+                todo.pop();
+
+                std::vector<std::vector<size_t>> borders = findBorders(*halfedge, currentCluster);
+
+                if (borders.size() <= 1)
+                {
+                    result.push_back(currentCluster);
+                    splitBar.addProgress(currentCluster.size());
+                }
+                else
+                {
+                    std::sort(borders.begin(), borders.end(), [](const std::vector<size_t>& a, const std::vector<size_t>& b) { return a.size() < b.size(); });
+                    auto newClusters = splitCluster(tri, currentCluster, borders[0]);
+                    for (const auto& x : newClusters)
+                        todo.push(x);
+                }
             }
         }
+        noHolesBar.addProgress(1);
 
         return result;
     }
@@ -356,5 +421,37 @@ TEST_CASE("Clustering/ClusterWithoutHolesCoversCubeVertex")
     }
 
     REQUIRE(vertex4IsAccountedFor);
+}
+
+TEST_CASE("Clustering/ClusterWithoutHolesSplitsHoledSurface")
+{
+    CADacomb::Triangulation tri;
+    for (int y = 0; y < 4; y++)
+        for (int x = 0; x < 4; x++)
+            tri.vertices.push_back(glm::dvec3(x, y, 0));
+
+    for (int y = 0; y < 3; y++)
+    {
+        for (int x = 0; x < 3; x++)
+        {
+            if (x == 1 && y == 1)
+                continue;
+
+            size_t a = y * 4 + x;
+            size_t b = y * 4 + x + 1;
+            size_t c = (y + 1) * 4 + x + 1;
+            size_t d = (y + 1) * 4 + x;
+            tri.indices.insert(tri.indices.end(), { a, b, c, a, c, d });
+        }
+    }
+
+    auto clusters = CADacomb::Clustering::clusterWithoutHoles(tri, [](size_t, size_t, const CADacomb::Triangulation&) { return true; });
+    REQUIRE(clusters.size() >= 2);
+
+    auto mesh = CADacomb::mesh2halfedge::convert(tri);
+    for (const auto& c : clusters)
+    {
+        CHECK(CADacomb::Clustering::findBorders(*mesh, c).size() <= 1);
+    }
 }
 #endif

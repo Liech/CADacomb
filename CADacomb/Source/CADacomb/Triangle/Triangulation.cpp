@@ -132,9 +132,14 @@ namespace CADacomb
 
     std::map<std::pair<size_t, size_t>, std::vector<size_t>> Triangulation::getAdjacency() const
     {
+        ProgressBar                                              bar(indices.size() / 3, "Building triangle adjacency");
         std::map<std::pair<size_t, size_t>, std::vector<size_t>> result;
         for (size_t i = 0; i < indices.size(); i += 3)
         {
+            if (bar.isCanceled())
+            {
+                return {};
+            }
             size_t t       = i / 3;
             auto   addEdge = [&](size_t a, size_t b)
             {
@@ -145,6 +150,7 @@ namespace CADacomb
             addEdge(indices[i], indices[i + 1]);
             addEdge(indices[i + 1], indices[i + 2]);
             addEdge(indices[i + 2], indices[i]);
+            bar.addProgress(1);
         }
         return result;
     }

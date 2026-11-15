@@ -16,6 +16,7 @@ namespace CADacomb
 
         static std::vector<std::vector<size_t>> cluster(const Triangulation&, std::function<bool(size_t currentIndex, size_t candidateIndex, const Triangulation&)> growFunction);
         static std::vector<std::vector<size_t>> clusterWithoutHoles(const Triangulation&, std::function<bool(size_t currentIndex, size_t candidateIndex, const Triangulation&)> growFunction);
+        static std::vector<std::vector<size_t>> clusterByNormal(const Triangulation&, double normalDotThreshold, bool withoutHoles = false);
 
         static std::vector<std::vector<size_t>> findBorders(const HalfEdgeMesh&, const std::vector<size_t>& trianglesInCluster);
         static std::vector<std::vector<size_t>> splitCluster(const Triangulation&, const std::vector<size_t>& triangleCluster, const std::vector<size_t>& loopToBreak);
