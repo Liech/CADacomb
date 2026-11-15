@@ -177,6 +177,19 @@ namespace CADacomb::CAD
             avgNormal /= normalLen;
         }
 
+        for (size_t triIdx : clusterTriangles)
+        {
+            size_t     i0       = mesh.indices[triIdx * 3 + 0];
+            size_t     i1       = mesh.indices[triIdx * 3 + 1];
+            size_t     i2       = mesh.indices[triIdx * 3 + 2];
+            glm::dvec3 triCross = glm::cross(mesh.vertices[i1] - mesh.vertices[i0], mesh.vertices[i2] - mesh.vertices[i0]);
+            double     triLen   = glm::length(triCross);
+            if (triLen > 1e-12 && glm::dot(triCross, avgNormal) <= 0.1 * triLen)
+            {
+                return result;
+            }
+        }
+
         glm::dvec3 fallbackAxis = (std::abs(avgNormal.x) < 0.9) ? glm::dvec3(1.0, 0.0, 0.0) : glm::dvec3(0.0, 1.0, 0.0);
         glm::dvec3 axisU        = glm::normalize(glm::cross(avgNormal, fallbackAxis));
         glm::dvec3 axisV        = glm::normalize(glm::cross(avgNormal, axisU));

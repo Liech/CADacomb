@@ -100,6 +100,8 @@ set(CAD_Conversion_Files
     "Source/CADacomb/CAD/Conversion/ClusterLoopReference.cpp"
     "Source/CADacomb/CAD/Conversion/ClusterToCadConverter.h"
     "Source/CADacomb/CAD/Conversion/ClusterToCadConverter.cpp"
+    "Source/CADacomb/CAD/Conversion/ConeSurfaceFit.h"
+    "Source/CADacomb/CAD/Conversion/ConeSurfaceFit.cpp"
     "Source/CADacomb/CAD/Conversion/CylinderSurfaceFit.h"
     "Source/CADacomb/CAD/Conversion/CylinderSurfaceFit.cpp"
     "Source/CADacomb/CAD/Conversion/NaiveMeshToCadConverter.h"
@@ -108,6 +110,8 @@ set(CAD_Conversion_Files
     "Source/CADacomb/CAD/Conversion/NurbsSurfaceFit.cpp"
     "Source/CADacomb/CAD/Conversion/PlanarSurfaceFit.h"
     "Source/CADacomb/CAD/Conversion/PlanarSurfaceFit.cpp"
+    "Source/CADacomb/CAD/Conversion/SphereSurfaceFit.h"
+    "Source/CADacomb/CAD/Conversion/SphereSurfaceFit.cpp"
 )
 source_group("Source/CAD/Conversion" FILES ${CAD_Conversion_Files})
 

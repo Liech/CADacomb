@@ -4,9 +4,11 @@
 #include "CADacomb/CAD/Interface/Shape.h"
 #include "CADacomb/Triangle/Triangulation.h"
 #include "ClusterBoundaryGraph.h"
+#include "ConeSurfaceFit.h"
 #include "CylinderSurfaceFit.h"
 #include "NurbsSurfaceFit.h"
 #include "PlanarSurfaceFit.h"
+#include "SphereSurfaceFit.h"
 
 #include <queue>
 #include <stdexcept>
@@ -144,15 +146,89 @@ namespace CADacomb::CAD
             throw std::runtime_error("ClusterToCadConverter::convert: no clusters provided");
         }
 
-        std::vector<std::vector<size_t>> refinedClusters = splitWideAngleClusters(mesh, clusters, planarityTolerance);
+        double analyticalTolerance = std::max(planarityTolerance * 10.0, 1e-2);
 
-        std::vector<PlanarSurfaceFit> planarFits;
-        planarFits.reserve(refinedClusters.size());
-        std::vector<bool> clusterIsPlanar(refinedClusters.size(), false);
-        for (size_t i = 0; i < refinedClusters.size(); i++)
+        std::vector<std::vector<size_t>> refinedClusters;
+        std::vector<bool>                clusterIsPlanar;
+        std::vector<PlanarSurfaceFit>    planarFits;
+        std::vector<CylinderSurfaceFit>  cylinderFits;
+        std::vector<ConeSurfaceFit>      coneFits;
+        std::vector<SphereSurfaceFit>    sphereFits;
+        std::vector<int>                 clusterKind; // 0 = planar, 1 = cylinder, 2 = cone, 3 = sphere, 4 = freeform
+
+        for (size_t i = 0; i < clusters.size(); i++)
         {
-            planarFits.push_back(PlanarSurfaceFit::fit(mesh, refinedClusters[i]));
-            clusterIsPlanar[i] = planarFits.back().isValid() && planarFits.back().getMaxDeviation() <= planarityTolerance;
+            const std::vector<size_t>& cluster = clusters[i];
+            if (cluster.empty())
+            {
+                continue;
+            }
+
+            PlanarSurfaceFit planarFit = PlanarSurfaceFit::fit(mesh, cluster);
+            if (planarFit.isValid() && planarFit.getMaxDeviation() <= planarityTolerance)
+            {
+                refinedClusters.push_back(cluster);
+                clusterIsPlanar.push_back(true);
+                clusterKind.push_back(0);
+                planarFits.push_back(planarFit);
+                cylinderFits.emplace_back();
+                coneFits.emplace_back();
+                sphereFits.emplace_back();
+                continue;
+            }
+
+            CylinderSurfaceFit cylinderFit = CylinderSurfaceFit::fit(mesh, cluster);
+            if (cylinderFit.isValid() && cylinderFit.getMaxDeviation() <= analyticalTolerance)
+            {
+                refinedClusters.push_back(cluster);
+                clusterIsPlanar.push_back(false);
+                clusterKind.push_back(1);
+                planarFits.emplace_back();
+                cylinderFits.push_back(cylinderFit);
+                coneFits.emplace_back();
+                sphereFits.emplace_back();
+                continue;
+            }
+
+            ConeSurfaceFit coneFit = ConeSurfaceFit::fit(mesh, cluster);
+            if (coneFit.isValid() && coneFit.getMaxDeviation() <= analyticalTolerance)
+            {
+                refinedClusters.push_back(cluster);
+                clusterIsPlanar.push_back(false);
+                clusterKind.push_back(2);
+                planarFits.emplace_back();
+                cylinderFits.emplace_back();
+                coneFits.push_back(coneFit);
+                sphereFits.emplace_back();
+                continue;
+            }
+
+            SphereSurfaceFit sphereFit = SphereSurfaceFit::fit(mesh, cluster);
+            if (sphereFit.isValid() && sphereFit.getMaxDeviation() <= analyticalTolerance)
+            {
+                refinedClusters.push_back(cluster);
+                clusterIsPlanar.push_back(false);
+                clusterKind.push_back(3);
+                planarFits.emplace_back();
+                cylinderFits.emplace_back();
+                coneFits.emplace_back();
+                sphereFits.push_back(sphereFit);
+                continue;
+            }
+
+            std::vector<std::vector<size_t>> subClusters = splitWideAngleClusters(mesh, { cluster }, planarityTolerance);
+            for (size_t s = 0; s < subClusters.size(); s++)
+            {
+                PlanarSurfaceFit subPlanar = PlanarSurfaceFit::fit(mesh, subClusters[s]);
+                bool             isSubPlanar = subPlanar.isValid() && subPlanar.getMaxDeviation() <= planarityTolerance;
+                refinedClusters.push_back(std::move(subClusters[s]));
+                clusterIsPlanar.push_back(isSubPlanar);
+                clusterKind.push_back(isSubPlanar ? 0 : 4);
+                planarFits.push_back(isSubPlanar ? subPlanar : PlanarSurfaceFit());
+                cylinderFits.emplace_back();
+                coneFits.emplace_back();
+                sphereFits.emplace_back();
+            }
         }
 
         ClusterBoundaryGraph graph = ClusterBoundaryGraph::build(mesh, refinedClusters);
@@ -169,7 +245,8 @@ namespace CADacomb::CAD
                 continue;
             }
 
-            if (clusterIsPlanar[clusterIndex])
+            int kind = clusterKind[clusterIndex];
+            if (kind == 0)
             {
                 try
                 {
@@ -180,14 +257,36 @@ namespace CADacomb::CAD
                 {
                 }
             }
-
-            double             cylinderTolerance = std::max(planarityTolerance * 10.0, 1e-2);
-            CylinderSurfaceFit cylinderFit       = CylinderSurfaceFit::fit(mesh, refinedClusters[clusterIndex]);
-            if (cylinderFit.isValid() && cylinderFit.getMaxDeviation() <= cylinderTolerance)
+            else if (kind == 1)
             {
                 try
                 {
-                    faceShapes.push_back(kernel.createCylindricalFace(cylinderFit.getOrigin(), cylinderFit.getAxis(), cylinderFit.getRadius(), cylinderFit.getHeight(), loops));
+                    const CylinderSurfaceFit& cf = cylinderFits[clusterIndex];
+                    faceShapes.push_back(kernel.createCylindricalFace(cf.getOrigin(), cf.getAxis(), cf.getRadius(), cf.getHeight(), loops));
+                    continue;
+                }
+                catch (const std::exception&)
+                {
+                }
+            }
+            else if (kind == 2)
+            {
+                try
+                {
+                    const ConeSurfaceFit& cf = coneFits[clusterIndex];
+                    faceShapes.push_back(kernel.createConicalFace(cf.getOrigin(), cf.getAxis(), cf.getBotRadius(), cf.getTopRadius(), cf.getHeight(), loops));
+                    continue;
+                }
+                catch (const std::exception&)
+                {
+                }
+            }
+            else if (kind == 3)
+            {
+                try
+                {
+                    const SphereSurfaceFit& sf = sphereFits[clusterIndex];
+                    faceShapes.push_back(kernel.createSphericalFace(sf.getCenter(), sf.getRadius(), loops));
                     continue;
                 }
                 catch (const std::exception&)
@@ -196,7 +295,7 @@ namespace CADacomb::CAD
             }
 
             NurbsSurfaceFit nurbsFit = NurbsSurfaceFit::fit(mesh, refinedClusters[clusterIndex]);
-            if (nurbsFit.isValid())
+            if (nurbsFit.isValid() && nurbsFit.getMaxDeviation() <= analyticalTolerance)
             {
                 try
                 {
