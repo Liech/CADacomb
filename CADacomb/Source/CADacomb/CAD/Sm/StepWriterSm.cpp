@@ -629,6 +629,39 @@ namespace CADacomb::CAD
             }
         }
 
+        if (solidEntityIds.empty() && !shellFacesMap.empty())
+        {
+            std::string openShellRefs;
+            for (const auto& [shellIndex, shellFaces] : shellFacesMap)
+            {
+                if (shellFaces.empty())
+                {
+                    continue;
+                }
+                std::string faceReferencesText;
+                for (size_t itemIndex = 0; itemIndex < shellFaces.size(); itemIndex++)
+                {
+                    if (!faceReferencesText.empty())
+                    {
+                        faceReferencesText += ",";
+                    }
+                    int faceEntityId = writeFace(buffer, dumpValue, kernelFaces, kernelEdges, vertexEntityIds, edgeEntityIds, shellFaces[itemIndex].first, shellFaces[itemIndex].second);
+                    faceReferencesText += "#" + std::to_string(faceEntityId);
+                }
+                int openShellId = buffer.addRawLine("OPEN_SHELL('',(" + faceReferencesText + "))");
+                if (!openShellRefs.empty())
+                {
+                    openShellRefs += ",";
+                }
+                openShellRefs += "#" + std::to_string(openShellId);
+            }
+
+            if (!openShellRefs.empty())
+            {
+                solidEntityIds.push_back(buffer.addRawLine("SHELL_BASED_SURFACE_MODEL(" + buffer.formatString(productName) + ",(" + openShellRefs + "))"));
+            }
+        }
+
         return solidEntityIds;
     }
 

@@ -15,6 +15,11 @@ namespace CADacomb::CAD
         std::unique_ptr<Solid> createBox(const glm::dvec3& minCorner, const glm::dvec3& dimensions) const override;
         std::unique_ptr<Solid> createCylinder(const glm::dvec3& baseCenter, double radius, double height) const override;
 
+        std::unique_ptr<Shape> createPlanarFace(const glm::dvec3& planeOrigin, const glm::dvec3& planeNormal, const std::vector<std::vector<glm::dvec3>>& loops) const override;
+        std::unique_ptr<Shape> mergeShapes(const std::vector<const Shape*>& shapes) const override;
+        std::unique_ptr<Shape> stitch(const Shape& shape, double tolerance, bool tryMakeSolid) const override;
+        void                   unifyNormals(Shape& shape) const override;
+
         std::unique_ptr<Shape> booleanUnion(const Shape& shapeA, const Shape& shapeB) const override;
         std::unique_ptr<Shape> booleanDifference(const Shape& shapeA, const Shape& shapeB) const override;
         std::unique_ptr<Shape> booleanIntersection(const Shape& shapeA, const Shape& shapeB) const override;

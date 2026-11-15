@@ -7,9 +7,13 @@
 #include "ext_shared.h"
 #include "tessellate.h"
 #include <SmApiBrep.h>
+#include <SmApiCurves.h>
 #include <SmApiPrimitives.h>
 #include <SmApiQueries.h>
+#include <SmApiTrimmedSurfaces.h>
+#include <SmLine.h>
 #include <SmPoly.h>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace CADacomb::CAD
@@ -41,6 +45,167 @@ namespace CADacomb::CAD
             SmPyRaise(status, "SmApiCreateCylinder", __FILE__, __LINE__);
         }
         return std::make_unique<SolidSm>(cylinderBrep);
+    }
+
+    std::unique_ptr<Shape> KernelSm::createPlanarFace(const glm::dvec3& planeOrigin, const glm::dvec3& planeNormal, const std::vector<std::vector<glm::dvec3>>& loops) const
+    {
+        double normalLength = glm::length(planeNormal);
+        if (normalLength < 1e-12)
+        {
+            throw std::runtime_error("KernelSm::createPlanarFace: zero-length plane normal");
+        }
+        glm::dvec3 unitNormal = planeNormal / normalLength;
+
+        SmTArray<SmCurve*> planarCurves;
+        for (size_t loopIndex = 0; loopIndex < loops.size(); loopIndex++)
+        {
+            const std::vector<glm::dvec3>& loop = loops[loopIndex];
+            if (loop.size() < 3)
+            {
+                continue;
+            }
+
+            std::vector<glm::dvec3> projectedLoop;
+            projectedLoop.reserve(loop.size());
+            for (size_t pointIndex = 0; pointIndex < loop.size(); pointIndex++)
+            {
+                const glm::dvec3& point = loop[pointIndex];
+                double            dist  = glm::dot(point - planeOrigin, unitNormal);
+                projectedLoop.push_back(point - dist * unitNormal);
+            }
+
+            for (size_t pointIndex = 0; pointIndex < projectedLoop.size(); pointIndex++)
+            {
+                const glm::dvec3& startPt = projectedLoop[pointIndex];
+                const glm::dvec3& endPt   = projectedLoop[(pointIndex + 1) % projectedLoop.size()];
+                if (glm::length(endPt - startPt) < 1e-10)
+                {
+                    continue;
+                }
+
+                SmLine*  line   = nullptr;
+                SmStatus status = SmApiCreateLineSegment(SmPoint3d(startPt.x, startPt.y, startPt.z), SmPoint3d(endPt.x, endPt.y, endPt.z), line);
+                if (status != SM_SUCCESS || line == nullptr)
+                {
+                    for (ULONG cleanupIndex = 0; cleanupIndex < planarCurves.GetSize(); cleanupIndex++)
+                    {
+                        delete planarCurves[cleanupIndex];
+                    }
+                    SmPyRaise(status, "SmApiCreateLineSegment", __FILE__, __LINE__);
+                }
+                planarCurves.Add(line);
+            }
+        }
+
+        if (planarCurves.GetSize() < 3)
+        {
+            for (ULONG cleanupIndex = 0; cleanupIndex < planarCurves.GetSize(); cleanupIndex++)
+            {
+                delete planarCurves[cleanupIndex];
+            }
+            throw std::runtime_error("KernelSm::createPlanarFace: insufficient boundary segments");
+        }
+
+        SmBrep*  faceBrep = nullptr;
+        SmStatus status   = SmApiCreatePlanarFaces(planarCurves, faceBrep);
+        if (status != SM_SUCCESS || faceBrep == nullptr)
+        {
+            for (ULONG cleanupIndex = 0; cleanupIndex < planarCurves.GetSize(); cleanupIndex++)
+            {
+                delete planarCurves[cleanupIndex];
+            }
+            SmPyRaise(status, "SmApiCreatePlanarFaces", __FILE__, __LINE__);
+        }
+
+        return std::make_unique<SolidSm>(faceBrep);
+    }
+
+    std::unique_ptr<Shape> KernelSm::mergeShapes(const std::vector<const Shape*>& shapes) const
+    {
+        if (shapes.empty())
+        {
+            throw std::runtime_error("KernelSm::mergeShapes: no shapes provided");
+        }
+
+        if (shapes.size() == 1)
+        {
+            return std::make_unique<SolidSm>(copyBrepFromShape(*shapes[0]));
+        }
+
+        SmTArray<SmBrep*> breps;
+        for (size_t shapeIndex = 0; shapeIndex < shapes.size(); shapeIndex++)
+        {
+            breps.Add(copyBrepFromShape(*shapes[shapeIndex]));
+        }
+
+        SmBrep*  mergedBrep = nullptr;
+        SmStatus status     = SmApiMergeBreps(breps, SM_BO_MERGE, mergedBrep);
+        if (status != SM_SUCCESS || mergedBrep == nullptr)
+        {
+            for (ULONG brepIndex = 0; brepIndex < breps.GetSize(); brepIndex++)
+            {
+                smlibpy::delete_brep(breps[brepIndex]);
+            }
+            SmPyRaise(status, "SmApiMergeBreps", __FILE__, __LINE__);
+        }
+
+        return std::make_unique<SolidSm>(mergedBrep);
+    }
+
+    std::unique_ptr<Shape> KernelSm::stitch(const Shape& shape, double tolerance, bool tryMakeSolid) const
+    {
+        SmBrep*   brep                = copyBrepFromShape(shape);
+        ULONG     stitchedEdges       = 0;
+        ULONG     laminaEdges         = 0;
+        double    maxVertexGap        = 0.0;
+        double    maxEdgeGap          = 0.0;
+        SmBoolean makingManifoldSolid = tryMakeSolid ? TRUE : FALSE;
+        SmStatus  status              = SmApiStitchAdvanced(brep, tolerance, TRUE, TRUE, makingManifoldSolid, FALSE, stitchedEdges, laminaEdges, maxVertexGap, maxEdgeGap);
+        if (status != SM_SUCCESS)
+        {
+            smlibpy::delete_brep(brep);
+            SmPyRaise(status, "SmApiStitchAdvanced", __FILE__, __LINE__);
+        }
+
+        if (tryMakeSolid && laminaEdges == 0)
+        {
+            SmBoolean producesSolid      = FALSE;
+            ULONG     solidStitchedEdges = 0;
+            double    solidVertexGap     = 0.0;
+            double    solidEdgeGap       = 0.0;
+            SmStatus  solidStatus        = SmApiStitchIntoSolid(brep, producesSolid, solidStitchedEdges, solidVertexGap, solidEdgeGap);
+            if (solidStatus != SM_SUCCESS)
+            {
+                smlibpy::delete_brep(brep);
+                SmPyRaise(solidStatus, "SmApiStitchIntoSolid", __FILE__, __LINE__);
+            }
+        }
+
+        return std::make_unique<SolidSm>(brep);
+    }
+
+    void KernelSm::unifyNormals(Shape& shape) const
+    {
+        SolidSm& solid = dynamic_cast<SolidSm&>(shape);
+        SmBrep*  brep  = solid.getBrep();
+        if (brep == nullptr)
+        {
+            return;
+        }
+
+        SmTArray<SmFace*> faces;
+        brep->GetFaces(faces);
+        if (faces.GetSize() == 0)
+        {
+            return;
+        }
+
+        SmTArray<SmFace*> flippedFaces;
+        SmStatus          status = SmApiUnifyNormals(brep, faces[0], 8, flippedFaces);
+        if (status != SM_SUCCESS)
+        {
+            SmPyRaise(status, "SmApiUnifyNormals", __FILE__, __LINE__);
+        }
     }
 
     std::unique_ptr<Shape> KernelSm::booleanUnion(const Shape& shapeA, const Shape& shapeB) const
@@ -436,5 +601,33 @@ TEST_CASE("KernelSm/GeometricEvaluations")
             }
         }
     }
+}
+
+TEST_CASE("KernelSm/PlanarFaceMergeAndStitch")
+{
+    CADacomb::CAD::KernelSm kernel;
+
+    std::vector<std::unique_ptr<CADacomb::CAD::Shape>> faces;
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 0.0, -1.0), { { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(1.0, 1.0, 0.0), glm::dvec3(1.0, 0.0, 0.0) } }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(0.0, 0.0, 1.0), { { glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(1.0, 0.0, 1.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(0.0, 1.0, 1.0) } }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, -1.0, 0.0), { { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 1.0), glm::dvec3(0.0, 0.0, 1.0) } }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(0.0, 1.0, 0.0), { { glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(0.0, 1.0, 1.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(1.0, 1.0, 0.0) } }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(-1.0, 0.0, 0.0), { { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(0.0, 1.0, 1.0), glm::dvec3(0.0, 1.0, 0.0) } }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 0.0), { { glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 1.0, 0.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(1.0, 0.0, 1.0) } }));
+
+    std::vector<const CADacomb::CAD::Shape*> facePtrs;
+    for (size_t faceIndex = 0; faceIndex < faces.size(); faceIndex++)
+    {
+        facePtrs.push_back(faces[faceIndex].get());
+    }
+
+    std::unique_ptr<CADacomb::CAD::Shape> merged  = kernel.mergeShapes(facePtrs);
+    std::unique_ptr<CADacomb::CAD::Shape> stitched = kernel.stitch(*merged, 1e-4, true);
+    kernel.unifyNormals(*stitched);
+
+    CADacomb::CAD::TessellationOptions     tessOptions;
+    std::unique_ptr<CADacomb::Triangulation> tri = kernel.tessellate(*stitched, tessOptions);
+    REQUIRE(tri != nullptr);
+    REQUIRE(tri->indices.size() >= 36);
 }
 #endif

@@ -91,6 +91,20 @@ set(CAD_Sm_Files
 )
 source_group("Source/CAD/Sm" FILES ${CAD_Sm_Files})
 
+set(CAD_Conversion_Files
+    "Source/CADacomb/CAD/Conversion/ClusterBoundaryChain.h"
+    "Source/CADacomb/CAD/Conversion/ClusterBoundaryChain.cpp"
+    "Source/CADacomb/CAD/Conversion/ClusterBoundaryGraph.h"
+    "Source/CADacomb/CAD/Conversion/ClusterBoundaryGraph.cpp"
+    "Source/CADacomb/CAD/Conversion/ClusterLoopReference.h"
+    "Source/CADacomb/CAD/Conversion/ClusterLoopReference.cpp"
+    "Source/CADacomb/CAD/Conversion/ClusterToCadConverter.h"
+    "Source/CADacomb/CAD/Conversion/ClusterToCadConverter.cpp"
+    "Source/CADacomb/CAD/Conversion/PlanarSurfaceFit.h"
+    "Source/CADacomb/CAD/Conversion/PlanarSurfaceFit.cpp"
+)
+source_group("Source/CAD/Conversion" FILES ${CAD_Conversion_Files})
+
 set(CAD_Step_Files
     "Source/CADacomb/CAD/Step/StepArgument.h"
     "Source/CADacomb/CAD/Step/StepArgument.cpp"
@@ -312,6 +326,7 @@ set(ALL_FILES
     ${Util_Files}
     ${CAD_Interface_Files}
     ${CAD_Sm_Files}
+    ${CAD_Conversion_Files}
     ${CAD_Step_Files}
     ${Triangle_Files}
     ${Triangle_HalfEdge_Files}
