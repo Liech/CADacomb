@@ -8,9 +8,12 @@
 #include "tessellate.h"
 #include <SmApiBrep.h>
 #include <SmApiCurves.h>
+#include <SmApiGeneral.h>
 #include <SmApiPrimitives.h>
 #include <SmApiQueries.h>
+#include <SmApiSurfaces.h>
 #include <SmApiTrimmedSurfaces.h>
+#include <SmCylinder.h>
 #include <SmLine.h>
 #include <SmPoly.h>
 #include <stdexcept>
@@ -115,6 +118,198 @@ namespace CADacomb::CAD
                 delete planarCurves[cleanupIndex];
             }
             SmPyRaise(status, "SmApiCreatePlanarFaces", __FILE__, __LINE__);
+        }
+
+        return std::make_unique<SolidSm>(faceBrep);
+    }
+
+    std::unique_ptr<Shape> KernelSm::createBSplineFace(size_t numRows, size_t numCols, const std::vector<glm::dvec3>& controlPoints, const std::vector<std::vector<glm::dvec3>>& loops) const
+    {
+        if (numRows < 4 || numCols < 4 || controlPoints.size() != numRows * numCols)
+        {
+            throw std::runtime_error("KernelSm::createBSplineFace: invalid control point grid");
+        }
+
+        SmTArray<SmPoint3d> smControlPoints;
+        smControlPoints.SetSize(static_cast<ULONG>(controlPoints.size()));
+        for (size_t i = 0; i < controlPoints.size(); i++)
+        {
+            smControlPoints[static_cast<ULONG>(i)] = SmPoint3d(controlPoints[i].x, controlPoints[i].y, controlPoints[i].z);
+        }
+
+        SmSurface* surface = nullptr;
+        SmStatus   status  = SmApiCreateSurface(smControlPoints, static_cast<ULONG>(numRows), static_cast<ULONG>(numCols), surface);
+        if (status != SM_SUCCESS || surface == nullptr)
+        {
+            SmPyRaise(status, "SmApiCreateSurface", __FILE__, __LINE__);
+        }
+
+        SmTArray<ULONG>    curveLoops;
+        SmTArray<SmCurve*> curves3d;
+        for (size_t loopIndex = 0; loopIndex < loops.size(); loopIndex++)
+        {
+            const std::vector<glm::dvec3>& loop = loops[loopIndex];
+            if (loop.size() < 3)
+            {
+                continue;
+            }
+
+            ULONG loopCurveCount = 0;
+            for (size_t pointIndex = 0; pointIndex < loop.size(); pointIndex++)
+            {
+                const glm::dvec3& startPt = loop[pointIndex];
+                const glm::dvec3& endPt   = loop[(pointIndex + 1) % loop.size()];
+                if (glm::length(endPt - startPt) < 1e-10)
+                {
+                    continue;
+                }
+
+                SmLine*  line       = nullptr;
+                SmStatus lineStatus = SmApiCreateLineSegment(SmPoint3d(startPt.x, startPt.y, startPt.z), SmPoint3d(endPt.x, endPt.y, endPt.z), line);
+                if (lineStatus != SM_SUCCESS || line == nullptr)
+                {
+                    delete surface;
+                    for (ULONG cleanupIndex = 0; cleanupIndex < curves3d.GetSize(); cleanupIndex++)
+                    {
+                        delete curves3d[cleanupIndex];
+                    }
+                    SmPyRaise(lineStatus, "SmApiCreateLineSegment", __FILE__, __LINE__);
+                }
+                curves3d.Add(line);
+                loopCurveCount++;
+            }
+
+            if (loopCurveCount >= 3)
+            {
+                curveLoops.Add(loopCurveCount);
+            }
+            else
+            {
+                for (ULONG k = 0; k < loopCurveCount; k++)
+                {
+                    ULONG lastIdx = curves3d.GetSize() - 1;
+                    delete curves3d[lastIdx];
+                    curves3d.RemoveAt(lastIdx);
+                }
+            }
+        }
+
+        if (curveLoops.GetSize() == 0 || curves3d.GetSize() < 3)
+        {
+            delete surface;
+            for (ULONG cleanupIndex = 0; cleanupIndex < curves3d.GetSize(); cleanupIndex++)
+            {
+                delete curves3d[cleanupIndex];
+            }
+            throw std::runtime_error("KernelSm::createBSplineFace: insufficient boundary segments");
+        }
+
+        SmBrep* faceBrep = nullptr;
+        status           = SmApiTrimSurfaceWith3dCurves(surface, curveLoops, curves3d, faceBrep);
+        if (status != SM_SUCCESS || faceBrep == nullptr)
+        {
+            SmPyRaise(status, "SmApiTrimSurfaceWith3dCurves", __FILE__, __LINE__);
+        }
+
+        return std::make_unique<SolidSm>(faceBrep);
+    }
+
+    std::unique_ptr<Shape> KernelSm::createCylindricalFace(const glm::dvec3& origin, const glm::dvec3& axis, double radius, double height, const std::vector<std::vector<glm::dvec3>>& loops) const
+    {
+        double axisLen = glm::length(axis);
+        if (axisLen < 1e-12 || radius <= 1e-10 || height <= 1e-10)
+        {
+            throw std::runtime_error("KernelSm::createCylindricalFace: invalid cylinder parameters");
+        }
+
+        glm::dvec3 unitAxis = axis / axisLen;
+        glm::dvec3 fallback = (std::abs(unitAxis.x) < 0.9) ? glm::dvec3(1.0, 0.0, 0.0) : glm::dvec3(0.0, 1.0, 0.0);
+        glm::dvec3 xAxis    = glm::normalize(glm::cross(unitAxis, fallback));
+        glm::dvec3 yAxis    = glm::normalize(glm::cross(unitAxis, xAxis));
+
+        // Extend cylinder slightly beyond loop bounds along axis so 3D boundary curves sit cleanly on the surface.
+        double     pad         = std::max(height * 0.05, 1e-3);
+        glm::dvec3 paddedOrig  = origin - pad * unitAxis;
+        double     paddedH     = height + 2.0 * pad;
+
+        SmContext*  ctx      = SmApiGetOrCreateContext();
+        SmCylinder* cylinder = new (ctx) SmCylinder(SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z),
+                                                    SmVector3d(xAxis.x, xAxis.y, xAxis.z),
+                                                    SmVector3d(yAxis.x, yAxis.y, yAxis.z),
+                                                    radius,
+                                                    0.0,
+                                                    360.0,
+                                                    paddedH,
+                                                    FALSE,
+                                                    FALSE,
+                                                    FALSE,
+                                                    ctx);
+
+        SmTArray<ULONG>    curveLoops;
+        SmTArray<SmCurve*> curves3d;
+        for (size_t loopIndex = 0; loopIndex < loops.size(); loopIndex++)
+        {
+            const std::vector<glm::dvec3>& loop = loops[loopIndex];
+            if (loop.size() < 3)
+            {
+                continue;
+            }
+
+            ULONG loopCurveCount = 0;
+            for (size_t pointIndex = 0; pointIndex < loop.size(); pointIndex++)
+            {
+                const glm::dvec3& startPt = loop[pointIndex];
+                const glm::dvec3& endPt   = loop[(pointIndex + 1) % loop.size()];
+                if (glm::length(endPt - startPt) < 1e-10)
+                {
+                    continue;
+                }
+
+                SmLine*  line       = nullptr;
+                SmStatus lineStatus = SmApiCreateLineSegment(SmPoint3d(startPt.x, startPt.y, startPt.z), SmPoint3d(endPt.x, endPt.y, endPt.z), line);
+                if (lineStatus != SM_SUCCESS || line == nullptr)
+                {
+                    delete cylinder;
+                    for (ULONG cleanupIndex = 0; cleanupIndex < curves3d.GetSize(); cleanupIndex++)
+                    {
+                        delete curves3d[cleanupIndex];
+                    }
+                    SmPyRaise(lineStatus, "SmApiCreateLineSegment", __FILE__, __LINE__);
+                }
+                curves3d.Add(line);
+                loopCurveCount++;
+            }
+
+            if (loopCurveCount >= 3)
+            {
+                curveLoops.Add(loopCurveCount);
+            }
+            else
+            {
+                for (ULONG k = 0; k < loopCurveCount; k++)
+                {
+                    ULONG lastIdx = curves3d.GetSize() - 1;
+                    delete curves3d[lastIdx];
+                    curves3d.RemoveAt(lastIdx);
+                }
+            }
+        }
+
+        if (curveLoops.GetSize() == 0 || curves3d.GetSize() < 3)
+        {
+            delete cylinder;
+            for (ULONG cleanupIndex = 0; cleanupIndex < curves3d.GetSize(); cleanupIndex++)
+            {
+                delete curves3d[cleanupIndex];
+            }
+            throw std::runtime_error("KernelSm::createCylindricalFace: insufficient boundary segments");
+        }
+
+        SmBrep*  faceBrep = nullptr;
+        SmStatus status   = SmApiTrimSurfaceWith3dCurves(cylinder, curveLoops, curves3d, faceBrep);
+        if (status != SM_SUCCESS || faceBrep == nullptr)
+        {
+            SmPyRaise(status, "SmApiTrimSurfaceWith3dCurves", __FILE__, __LINE__);
         }
 
         return std::make_unique<SolidSm>(faceBrep);

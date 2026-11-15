@@ -20,6 +20,14 @@ namespace CADacomb::CAD
         ClusterToCadConverter();
         virtual ~ClusterToCadConverter();
 
+        std::unique_ptr<Shape> convert(const Kernel&                           kernel,
+                                       const Triangulation&                    mesh,
+                                       const std::vector<std::vector<size_t>>& clusters,
+                                       double                                  planarityTolerance,
+                                       double                                  boundarySimplifyTolerance,
+                                       double                                  stitchTolerance,
+                                       bool                                    tryMakeSolid) const;
+
         std::unique_ptr<Shape> convertPlanar(const Kernel&                           kernel,
                                              const Triangulation&                    mesh,
                                              const std::vector<std::vector<size_t>>& clusters,
@@ -27,5 +35,10 @@ namespace CADacomb::CAD
                                              double                                  boundarySimplifyTolerance,
                                              double                                  stitchTolerance,
                                              bool                                    tryMakeSolid) const;
+
+      private:
+        static std::vector<std::vector<size_t>> splitWideAngleClusters(const Triangulation&                    mesh,
+                                                                       const std::vector<std::vector<size_t>>& clusters,
+                                                                       double                                  planarityTolerance);
     };
 }
