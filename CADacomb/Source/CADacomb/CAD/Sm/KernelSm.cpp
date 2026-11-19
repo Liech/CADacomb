@@ -1,5 +1,7 @@
-#include "KernelSm.h"
+﻿#include "KernelSm.h"
 
+#include "CompSolidSm.h"
+#include "CompoundSm.h"
 #include "SmPyError.h"
 #include "SolidSm.h"
 #include "StepReaderSm.h"
@@ -133,9 +135,9 @@ namespace CADacomb::CAD
             throw std::runtime_error("KernelSm::createFaceFromUVCurves: null surface");
         }
 
-        SmContext*  ctx      = SmApiGetOrCreateContext();
-        SmExtent2d  uvDomain = surface->GetNaturalUVDomain();
-        double      uSpan    = uvDomain.GetUMax() - uvDomain.GetUMin();
+        SmContext* ctx      = SmApiGetOrCreateContext();
+        SmExtent2d uvDomain = surface->GetNaturalUVDomain();
+        double     uSpan    = uvDomain.GetUMax() - uvDomain.GetUMin();
 
         SmTArray<ULONG>           curveLoops;
         SmTArray<SmBSplineCurve*> uvCurves;
@@ -162,12 +164,12 @@ namespace CADacomb::CAD
 
             for (size_t pointIndex = 0; pointIndex < loop.size(); pointIndex++)
             {
-                const glm::dvec3& pt           = loop[pointIndex];
-                SmBoolean         bSuccess     = FALSE;
+                const glm::dvec3& pt       = loop[pointIndex];
+                SmBoolean         bSuccess = FALSE;
                 SmPoint2d         uvResult(0.0, 0.0);
-                double            gap          = 0.0;
+                double            gap           = 0.0;
                 SmBoolean         isMultivalued = FALSE;
-                const SmPoint2d*  guessPtr     = uvPoints.empty() ? nullptr : &uvPoints.back();
+                const SmPoint2d*  guessPtr      = uvPoints.empty() ? nullptr : &uvPoints.back();
 
                 surface->DropPoint(SmPoint3d(pt.x, pt.y, pt.z), uvDomain, guessPtr, bSuccess, uvResult, gap, isMultivalued, SM_SO_MINIMIZE);
                 if (!bSuccess && guessPtr != nullptr)
@@ -236,12 +238,13 @@ namespace CADacomb::CAD
 
         SmBrep*             faceBrep = new (*ctx) SmBrep();
         SmTArray<SmPoint3d> emptyLoopPoints;
-        SmRegion*          newRegion    = nullptr;
-        SmShell*           newShell     = nullptr;
-        SmFace*            newFace      = nullptr;
-        SmBoolean          useCrvOnSurf = TRUE;
+        SmRegion*           newRegion    = nullptr;
+        SmShell*            newShell     = nullptr;
+        SmFace*             newFace      = nullptr;
+        SmBoolean           useCrvOnSurf = TRUE;
 
-        SmStatus status = faceBrep->MakeFaceWithCurves(nullptr, curveLoops, nullptr, &uvCurves, orientations, emptyLoopPoints, surface, uvDomain, SM_OT_SAME, newRegion, newShell, newFace, &useCrvOnSurf);
+        SmStatus status =
+          faceBrep->MakeFaceWithCurves(nullptr, curveLoops, nullptr, &uvCurves, orientations, emptyLoopPoints, surface, uvDomain, SM_OT_SAME, newRegion, newShell, newFace, &useCrvOnSurf);
         if (status != SM_SUCCESS || newFace == nullptr)
         {
             delete faceBrep;
@@ -377,38 +380,25 @@ namespace CADacomb::CAD
 
         try
         {
-            SmCylinder* uvCylinder = new (ctx) SmCylinder(SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z),
-                                                          SmVector3d(xAxis.x, xAxis.y, xAxis.z),
-                                                          SmVector3d(yAxis.x, yAxis.y, yAxis.z),
-                                                          radius,
-                                                          0.0,
-                                                          360.0,
-                                                          paddedH,
-                                                          FALSE,
-                                                          FALSE,
-                                                          FALSE,
-                                                          ctx);
+            SmCylinder* uvCylinder = new (ctx) SmCylinder(
+              SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z), SmVector3d(xAxis.x, xAxis.y, xAxis.z), SmVector3d(yAxis.x, yAxis.y, yAxis.z), radius, 0.0, 360.0, paddedH, FALSE, FALSE, FALSE, ctx);
             return createFaceFromUVCurves(uvCylinder, loops);
         }
         catch (const std::exception&)
         {
         }
 
-        SmCylinder* cylinder = new (ctx) SmCylinder(SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z),
-                                                    SmVector3d(xAxis.x, xAxis.y, xAxis.z),
-                                                    SmVector3d(yAxis.x, yAxis.y, yAxis.z),
-                                                    radius,
-                                                    0.0,
-                                                    360.0,
-                                                    paddedH,
-                                                    FALSE,
-                                                    FALSE,
-                                                    FALSE,
-                                                    ctx);
+        SmCylinder* cylinder = new (ctx) SmCylinder(
+          SmPoint3d(paddedOrig.x, paddedOrig.y, paddedOrig.z), SmVector3d(xAxis.x, xAxis.y, xAxis.z), SmVector3d(yAxis.x, yAxis.y, yAxis.z), radius, 0.0, 360.0, paddedH, FALSE, FALSE, FALSE, ctx);
         return trimSurfaceWith3dCurves(cylinder, loops);
     }
 
-    std::unique_ptr<Shape> KernelSm::createConicalFace(const glm::dvec3& origin, const glm::dvec3& axis, double botRadius, double topRadius, double height, const std::vector<std::vector<glm::dvec3>>& loops) const
+    std::unique_ptr<Shape> KernelSm::createConicalFace(const glm::dvec3&                           origin,
+                                                       const glm::dvec3&                           axis,
+                                                       double                                      botRadius,
+                                                       double                                      topRadius,
+                                                       double                                      height,
+                                                       const std::vector<std::vector<glm::dvec3>>& loops) const
     {
         double axisLen = glm::length(axis);
         if (axisLen < 1e-12 || height <= 1e-10 || (botRadius <= 1e-10 && topRadius <= 1e-10))
@@ -686,10 +676,10 @@ namespace CADacomb::CAD
         return reader.loadFile(filePath);
     }
 
-    void KernelSm::saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName) const
+    void KernelSm::saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName, const glm::dmat4& transformation) const
     {
         StepWriterSm writer;
-        writer.writeShape(shape, filePath, productName);
+        writer.writeShape(shape, filePath, productName, transformation);
     }
 
     SmBrep* KernelSm::copyBrepFromShape(const Shape& shape) const
@@ -974,12 +964,36 @@ TEST_CASE("KernelSm/PlanarFaceMergeAndStitch")
     CADacomb::CAD::KernelSm kernel;
 
     std::vector<std::unique_ptr<CADacomb::CAD::Shape>> faces;
-    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 0.0, -1.0), { { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(1.0, 1.0, 0.0), glm::dvec3(1.0, 0.0, 0.0) } }));
-    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(0.0, 0.0, 1.0), { { glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(1.0, 0.0, 1.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(0.0, 1.0, 1.0) } }));
-    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, -1.0, 0.0), { { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 1.0), glm::dvec3(0.0, 0.0, 1.0) } }));
-    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(0.0, 1.0, 0.0), { { glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(0.0, 1.0, 1.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(1.0, 1.0, 0.0) } }));
-    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(-1.0, 0.0, 0.0), { { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(0.0, 1.0, 1.0), glm::dvec3(0.0, 1.0, 0.0) } }));
-    faces.push_back(kernel.createPlanarFace(glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 0.0), { { glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 1.0, 0.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(1.0, 0.0, 1.0) } }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0),
+                                            glm::dvec3(0.0, 0.0, -1.0),
+                                            {
+                                              { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(1.0, 1.0, 0.0), glm::dvec3(1.0, 0.0, 0.0) }
+    }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 1.0),
+                                            glm::dvec3(0.0, 0.0, 1.0),
+                                            {
+                                              { glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(1.0, 0.0, 1.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(0.0, 1.0, 1.0) }
+    }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0),
+                                            glm::dvec3(0.0, -1.0, 0.0),
+                                            {
+                                              { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 0.0, 1.0), glm::dvec3(0.0, 0.0, 1.0) }
+    }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 1.0, 0.0),
+                                            glm::dvec3(0.0, 1.0, 0.0),
+                                            {
+                                              { glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(0.0, 1.0, 1.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(1.0, 1.0, 0.0) }
+    }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(0.0, 0.0, 0.0),
+                                            glm::dvec3(-1.0, 0.0, 0.0),
+                                            {
+                                              { glm::dvec3(0.0, 0.0, 0.0), glm::dvec3(0.0, 0.0, 1.0), glm::dvec3(0.0, 1.0, 1.0), glm::dvec3(0.0, 1.0, 0.0) }
+    }));
+    faces.push_back(kernel.createPlanarFace(glm::dvec3(1.0, 0.0, 0.0),
+                                            glm::dvec3(1.0, 0.0, 0.0),
+                                            {
+                                              { glm::dvec3(1.0, 0.0, 0.0), glm::dvec3(1.0, 1.0, 0.0), glm::dvec3(1.0, 1.0, 1.0), glm::dvec3(1.0, 0.0, 1.0) }
+    }));
 
     std::vector<const CADacomb::CAD::Shape*> facePtrs;
     for (size_t faceIndex = 0; faceIndex < faces.size(); faceIndex++)
@@ -987,11 +1001,11 @@ TEST_CASE("KernelSm/PlanarFaceMergeAndStitch")
         facePtrs.push_back(faces[faceIndex].get());
     }
 
-    std::unique_ptr<CADacomb::CAD::Shape> merged  = kernel.mergeShapes(facePtrs);
+    std::unique_ptr<CADacomb::CAD::Shape> merged   = kernel.mergeShapes(facePtrs);
     std::unique_ptr<CADacomb::CAD::Shape> stitched = kernel.stitch(*merged, 1e-4, true);
     kernel.unifyNormals(*stitched);
 
-    CADacomb::CAD::TessellationOptions     tessOptions;
+    CADacomb::CAD::TessellationOptions       tessOptions;
     std::unique_ptr<CADacomb::Triangulation> tri = kernel.tessellate(*stitched, tessOptions);
     REQUIRE(tri != nullptr);
     REQUIRE(tri->indices.size() >= 36);

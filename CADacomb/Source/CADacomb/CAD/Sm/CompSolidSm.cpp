@@ -1,4 +1,4 @@
-#include "CompSolidSm.h"
+﻿#include "CompSolidSm.h"
 
 #include "BrepTransformSm.h"
 #include "SolidSm.h"

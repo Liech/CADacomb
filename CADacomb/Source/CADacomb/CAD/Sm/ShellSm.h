@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/CAD/Interface/Shell.h"
 #include <memory>

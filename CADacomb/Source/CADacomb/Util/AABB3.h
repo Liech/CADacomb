@@ -18,6 +18,7 @@ namespace CADacomb
 
         glm::dvec3 getSize() const;
         glm::dvec3 getCenter() const;
+        AABB3      transformed(const glm::dmat4& matrix) const;
 
         bool contains(const glm::dvec3& point) const;
         bool contains(const AABB3& other) const;

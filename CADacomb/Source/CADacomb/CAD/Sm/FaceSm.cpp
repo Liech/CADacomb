@@ -1,4 +1,4 @@
-#include "FaceSm.h"
+﻿#include "FaceSm.h"
 
 #include "BrepTransformSm.h"
 #include "SmPyError.h"

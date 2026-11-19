@@ -1,4 +1,4 @@
-#include "VertexSm.h"
+﻿#include "VertexSm.h"
 
 #include "BrepTransformSm.h"
 #include <SmVertex.h>

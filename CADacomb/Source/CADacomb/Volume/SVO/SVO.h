@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <algorithm>
 #include <array>
@@ -647,25 +647,18 @@ namespace CADacomb
             const auto& node   = nodes[nodeIdx];
             bool        isLeaf = (node.childPointer == 0xFFFFFFFF);
 
-            if constexpr (std::is_invocable_r_v<bool, Visitor, const SVONode<T>&, glm::ivec3, uint32_t, int, bool>)
+            if (!visitor(node, nodeOffset, nodeDim, depth, isLeaf))
             {
-                bool descend = visitor(node, nodeOffset, nodeDim, depth, isLeaf);
-                if (!descend || isLeaf)
-                {
-                    return;
-                }
+                return;
             }
-            else
+
+            if (isLeaf)
             {
-                visitor(node, nodeOffset, nodeDim, depth, isLeaf);
-                if (isLeaf)
-                {
-                    return;
-                }
+                return;
             }
 
             uint32_t half = nodeDim >> 1;
-            for (short i = 0; i < 8; ++i)
+            for (short i = 0; i < 8; i++)
             {
                 glm::ivec3 childOff = nextOffset(i, nodeOffset, nodeDim);
                 self(self, node.childPointer + i, childOff, half, depth + 1);
@@ -680,12 +673,11 @@ namespace CADacomb
     void SVO<T>::traverseLeaves(LeafVisitor&& leafVisitor) const
     {
         traverse(
-          [&](const SVONode<T>& node, const glm::ivec3& offset, uint32_t nodeDim, int depth, bool isLeaf)
+          [&](const SVONode<T>& node, const glm::ivec3& offset, uint32_t nodeDim, int depth, bool isLeaf) -> bool
           {
               if (isLeaf)
               {
                   leafVisitor(node, offset, nodeDim, depth);
-                  return false;
               }
               return true;
           });

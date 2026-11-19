@@ -1,7 +1,9 @@
-#include "BrepTransformSm.h"
+﻿#include "BrepTransformSm.h"
 
 #include "SmPyError.h"
+#include "ext_shared.h"
 #include <SmApiGeneral.h>
+#include <SmApiQueries.h>
 #include <SmAxis2Placement.h>
 #include <SmBrep.h>
 #include <cmath>
@@ -12,6 +14,22 @@ namespace CADacomb::CAD
 
     BrepTransformSm::~BrepTransformSm() {}
 
+    std::shared_ptr<SmBrep> BrepTransformSm::cloneBrep(const std::shared_ptr<SmBrep>& brep)
+    {
+        if (!brep)
+        {
+            return nullptr;
+        }
+
+        SmBrep*  copied = nullptr;
+        SmStatus status = SmApiBrepCopy(brep.get(), copied);
+        if (status != SM_SUCCESS)
+        {
+            SmPyRaise(status, "SmApiBrepCopy", __FILE__, __LINE__);
+        }
+        return std::shared_ptr<SmBrep>(copied, &smlibpy::delete_brep);
+    }
+
     void BrepTransformSm::transform(SmBrep* brep, const glm::dmat4& transformationMatrix)
     {
         if (brep == nullptr)
@@ -21,13 +39,20 @@ namespace CADacomb::CAD
 
         glm::dvec3 rawX(transformationMatrix[0].x, transformationMatrix[0].y, transformationMatrix[0].z);
         glm::dvec3 rawY(transformationMatrix[1].x, transformationMatrix[1].y, transformationMatrix[1].z);
-        double     scaleFactor = glm::length(rawX);
+        glm::dvec3 rawZ(transformationMatrix[2].x, transformationMatrix[2].y, transformationMatrix[2].z);
+        double     scaleX = glm::length(rawX);
+        double     scaleY = glm::length(rawY);
+        double     scaleZ = glm::length(rawZ);
 
-        if (std::abs(scaleFactor - 1.0) > 1e-9 && scaleFactor > 1e-12)
+        if ((std::abs(scaleX - 1.0) > 1e-9 || std::abs(scaleY - 1.0) > 1e-9 || std::abs(scaleZ - 1.0) > 1e-9) && scaleX > 1e-12 && scaleY > 1e-12 && scaleZ > 1e-12)
         {
-            scale(brep, glm::dvec3(0.0), scaleFactor);
-            rawX /= scaleFactor;
-            rawY /= scaleFactor;
+            SmStatus scaleStatus = SmApiScaleByPt(brep, SmVector3d(0.0, 0.0, 0.0), SmVector3d(scaleX, scaleY, scaleZ));
+            if (scaleStatus != SM_SUCCESS)
+            {
+                SmPyRaise(scaleStatus, "SmApiScaleByPt", __FILE__, __LINE__);
+            }
+            rawX /= scaleX;
+            rawY /= scaleY;
         }
 
         SmPoint3d        origin(transformationMatrix[3].x, transformationMatrix[3].y, transformationMatrix[3].z);

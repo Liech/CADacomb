@@ -1,4 +1,4 @@
-#include "WireSm.h"
+﻿#include "WireSm.h"
 
 #include "BrepTransformSm.h"
 #include "EdgeSm.h"

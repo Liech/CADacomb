@@ -1,5 +1,6 @@
-#include "StepWriterSm.h"
+﻿#include "StepWriterSm.h"
 
+#include "BrepTransformSm.h"
 #include "CADacomb/Util/ProgressBar.h"
 #include "CompSolidSm.h"
 #include "CompoundSm.h"
@@ -24,23 +25,49 @@ namespace CADacomb::CAD
 
     StepWriterSm::~StepWriterSm() {}
 
-    void StepWriterSm::writeShape(const Shape& shape, const std::string& filePath, const std::string& productName) const
+    void StepWriterSm::writeShape(const Shape& shape, const std::string& filePath, const std::string& productName, const glm::dmat4& transformation) const
     {
+        bool hasTransform = (transformation != glm::dmat4(1.0));
+
         if (shape.getShapeType() == ShapeType::Solid)
         {
             const SolidSm& solid = dynamic_cast<const SolidSm&>(shape);
-            writeFile(solid.getBrep(), filePath, productName);
+            if (hasTransform)
+            {
+                std::shared_ptr<SmBrep> cloned = BrepTransformSm::cloneBrep(solid.getSharedBrep());
+                BrepTransformSm::transform(cloned.get(), transformation);
+                writeFile(cloned.get(), filePath, productName);
+            }
+            else
+            {
+                writeFile(solid.getBrep(), filePath, productName);
+            }
             return;
         }
         if (shape.getShapeType() == ShapeType::Compound)
         {
             const CompoundSm&                           compound   = dynamic_cast<const CompoundSm&>(shape);
             const std::vector<std::shared_ptr<SmBrep>>& sharedList = compound.getBreps();
+            std::vector<std::shared_ptr<SmBrep>>        clonedStorage;
             std::vector<const SmBrep*>                  breps;
             breps.reserve(sharedList.size());
-            for (size_t index = 0; index < sharedList.size(); index++)
+            if (hasTransform)
             {
-                breps.push_back(sharedList[index].get());
+                clonedStorage.reserve(sharedList.size());
+                for (size_t index = 0; index < sharedList.size(); index++)
+                {
+                    std::shared_ptr<SmBrep> cloned = BrepTransformSm::cloneBrep(sharedList[index]);
+                    BrepTransformSm::transform(cloned.get(), transformation);
+                    breps.push_back(cloned.get());
+                    clonedStorage.push_back(std::move(cloned));
+                }
+            }
+            else
+            {
+                for (size_t index = 0; index < sharedList.size(); index++)
+                {
+                    breps.push_back(sharedList[index].get());
+                }
             }
             writeBreps(breps, filePath, productName);
             return;
@@ -49,11 +76,26 @@ namespace CADacomb::CAD
         {
             const CompSolidSm&                          compSolid  = dynamic_cast<const CompSolidSm&>(shape);
             const std::vector<std::shared_ptr<SmBrep>>& sharedList = compSolid.getBreps();
+            std::vector<std::shared_ptr<SmBrep>>        clonedStorage;
             std::vector<const SmBrep*>                  breps;
             breps.reserve(sharedList.size());
-            for (size_t index = 0; index < sharedList.size(); index++)
+            if (hasTransform)
             {
-                breps.push_back(sharedList[index].get());
+                clonedStorage.reserve(sharedList.size());
+                for (size_t index = 0; index < sharedList.size(); index++)
+                {
+                    std::shared_ptr<SmBrep> cloned = BrepTransformSm::cloneBrep(sharedList[index]);
+                    BrepTransformSm::transform(cloned.get(), transformation);
+                    breps.push_back(cloned.get());
+                    clonedStorage.push_back(std::move(cloned));
+                }
+            }
+            else
+            {
+                for (size_t index = 0; index < sharedList.size(); index++)
+                {
+                    breps.push_back(sharedList[index].get());
+                }
             }
             writeBreps(breps, filePath, productName);
             return;

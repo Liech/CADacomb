@@ -1,5 +1,6 @@
 ﻿#include "AABB3.h"
 #include <algorithm>
+#include <limits>
 
 namespace CADacomb
 {
@@ -41,6 +42,22 @@ namespace CADacomb
     glm::dvec3 AABB3::getCenter() const
     {
         return (minPoint + maxPoint) * 0.5;
+    }
+
+    AABB3 AABB3::transformed(const glm::dmat4& matrix) const
+    {
+        glm::dvec3 transformedMin(std::numeric_limits<double>::max());
+        glm::dvec3 transformedMax(std::numeric_limits<double>::lowest());
+
+        for (int i = 0; i < 8; i++)
+        {
+            glm::dvec3 corner((i & 1) ? maxPoint.x : minPoint.x, (i & 2) ? maxPoint.y : minPoint.y, (i & 4) ? maxPoint.z : minPoint.z);
+            glm::dvec3 worldCorner = glm::dvec3(matrix * glm::dvec4(corner, 1.0));
+            transformedMin         = glm::min(transformedMin, worldCorner);
+            transformedMax         = glm::max(transformedMax, worldCorner);
+        }
+
+        return AABB3(transformedMin, transformedMax);
     }
 
     bool AABB3::contains(const glm::dvec3& point) const

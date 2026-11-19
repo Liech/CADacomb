@@ -1,4 +1,4 @@
-#include "EdgeSm.h"
+﻿#include "EdgeSm.h"
 
 #include "BrepTransformSm.h"
 #include "SmPyError.h"

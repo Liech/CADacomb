@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/CAD/Interface/Kernel.h"
 
@@ -19,7 +19,8 @@ namespace CADacomb::CAD
         std::unique_ptr<Shape> createPlanarFace(const glm::dvec3& planeOrigin, const glm::dvec3& planeNormal, const std::vector<std::vector<glm::dvec3>>& loops) const override;
         std::unique_ptr<Shape> createBSplineFace(size_t numRows, size_t numCols, const std::vector<glm::dvec3>& controlPoints, const std::vector<std::vector<glm::dvec3>>& loops) const override;
         std::unique_ptr<Shape> createCylindricalFace(const glm::dvec3& origin, const glm::dvec3& axis, double radius, double height, const std::vector<std::vector<glm::dvec3>>& loops) const override;
-        std::unique_ptr<Shape> createConicalFace(const glm::dvec3& origin, const glm::dvec3& axis, double botRadius, double topRadius, double height, const std::vector<std::vector<glm::dvec3>>& loops) const override;
+        std::unique_ptr<Shape> createConicalFace(const glm::dvec3& origin, const glm::dvec3& axis, double botRadius, double topRadius, double height, const std::vector<std::vector<glm::dvec3>>& loops)
+          const override;
         std::unique_ptr<Shape> createSphericalFace(const glm::dvec3& center, double radius, const std::vector<std::vector<glm::dvec3>>& loops) const override;
         std::unique_ptr<Shape> mergeShapes(const std::vector<const Shape*>& shapes) const override;
         std::unique_ptr<Shape> stitch(const Shape& shape, double tolerance, bool tryMakeSolid) const override;
@@ -32,7 +33,7 @@ namespace CADacomb::CAD
         std::unique_ptr<Triangulation> tessellate(const Shape& shape, const TessellationOptions& options) const override;
 
         std::vector<std::unique_ptr<Shape>> loadStepFile(const std::string& filePath) const override;
-        void                                saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName) const override;
+        void saveStepFile(const Shape& shape, const std::string& filePath, const std::string& productName, const glm::dmat4& transformation = glm::dmat4(1.0)) const override;
 
       private:
         SmBrep*                copyBrepFromShape(const Shape& shape) const;

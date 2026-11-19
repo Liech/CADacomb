@@ -1,4 +1,4 @@
-#include "SVO.h"
+﻿#include "SVO.h"
 
 namespace CADacomb
 {
@@ -289,11 +289,54 @@ namespace CADacomb
           {
               visitedCount++;
               if (offset.x >= 2 || offset.y >= 2 || offset.z >= 2)
+              {
                   return false;
+              }
               return true;
           });
 
         CHECK(visitedCount > 0);
+    }
+
+    TEST_CASE("SVO Traverse Pruning", "[SVO][Traverse]")
+    {
+        SVO<int> svo(4, 0);
+        svo.setVoxel({ 0, 0, 0 }, 5);
+        svo.setVoxel({ 3, 3, 3 }, 9);
+
+        bool reachedVoxelZero = false;
+        svo.traverse(
+          [&](const SVONode<int>& node, const glm::ivec3& offset, uint32_t nodeDim, int depth, bool isLeaf) -> bool
+          {
+              if (offset == glm::ivec3(0, 0, 0) && nodeDim == 1)
+              {
+                  reachedVoxelZero = true;
+              }
+              if (offset == glm::ivec3(0, 0, 0) && nodeDim == 2)
+              {
+                  return false;
+              }
+              return true;
+          });
+
+        CHECK_FALSE(reachedVoxelZero);
+
+        bool reachedVoxelThree = false;
+        svo.traverse(
+          [&](const SVONode<int>& node, const glm::ivec3& offset, uint32_t nodeDim, int depth, bool isLeaf) -> bool
+          {
+              if (offset == glm::ivec3(3, 3, 3) && nodeDim == 1)
+              {
+                  reachedVoxelThree = true;
+              }
+              if (offset == glm::ivec3(0, 0, 0) && nodeDim == 2)
+              {
+                  return false;
+              }
+              return true;
+          });
+
+        CHECK(reachedVoxelThree);
     }
 
     TEST_CASE("SVO getSubSVO: Homogeneous extraction", "[SVO][SubSVO]")

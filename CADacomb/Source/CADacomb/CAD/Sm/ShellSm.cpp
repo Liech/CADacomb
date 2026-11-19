@@ -1,4 +1,4 @@
-#include "ShellSm.h"
+﻿#include "ShellSm.h"
 
 #include "BrepTransformSm.h"
 #include "FaceSm.h"

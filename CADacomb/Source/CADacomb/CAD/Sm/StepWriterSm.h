@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/CAD/Interface/Shape.h"
 #include "CADacomb/CAD/Step/StepEntityBuffer.h"
@@ -23,7 +23,7 @@ namespace CADacomb::CAD
         StepWriterSm();
         virtual ~StepWriterSm();
 
-        void writeShape(const Shape& shape, const std::string& filePath, const std::string& productName) const;
+        void writeShape(const Shape& shape, const std::string& filePath, const std::string& productName, const glm::dmat4& transformation = glm::dmat4(1.0)) const;
         void writeFile(const SmBrep* brep, const std::string& filePath, const std::string& productName) const;
         void writeBreps(const std::vector<const SmBrep*>& breps, const std::string& filePath, const std::string& productName) const;
 
