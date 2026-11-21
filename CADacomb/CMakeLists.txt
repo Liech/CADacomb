@@ -5,7 +5,35 @@ project(CADacomb)
 find_package(glm REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(smlib CONFIG REQUIRED)
+find_package(Jolt CONFIG REQUIRED)
 find_package(OpenMP)
+
+set(Physics_Files
+    "Source/CADacomb/Physics/README.md"
+)
+source_group("Source/Physics" FILES ${Physics_Files})
+
+set(Physics_Interface_Files
+    "Source/CADacomb/Physics/Interface/Physics.h"
+    "Source/CADacomb/Physics/Interface/Physics.cpp"
+    "Source/CADacomb/Physics/Interface/RigidBody.h"
+    "Source/CADacomb/Physics/Interface/RigidBody.cpp"
+)
+source_group("Source/Physics/Interface" FILES ${Physics_Interface_Files})
+
+set(Physics_Jolt_Files
+    "Source/CADacomb/Physics/Jolt/BroadPhaseLayerInterfaceJ.h"
+    "Source/CADacomb/Physics/Jolt/BroadPhaseLayerInterfaceJ.cpp"
+    "Source/CADacomb/Physics/Jolt/ObjectLayerPairFilterJ.h"
+    "Source/CADacomb/Physics/Jolt/ObjectLayerPairFilterJ.cpp"
+    "Source/CADacomb/Physics/Jolt/ObjectVsBroadPhaseLayerFilterJ.h"
+    "Source/CADacomb/Physics/Jolt/ObjectVsBroadPhaseLayerFilterJ.cpp"
+    "Source/CADacomb/Physics/Jolt/PhysicsJ.h"
+    "Source/CADacomb/Physics/Jolt/PhysicsJ.cpp"
+    "Source/CADacomb/Physics/Jolt/RigidBodyJ.h"
+    "Source/CADacomb/Physics/Jolt/RigidBodyJ.cpp"
+)
+source_group("Source/Physics/Jolt" FILES ${Physics_Jolt_Files})
 
 set(Binary_Files
     "Source/CADacomb/Util/Binary/base64.h"
@@ -340,6 +368,9 @@ set(Volume_LODStrategy_Files
 source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
 
 set(ALL_FILES
+    ${Physics_Files}
+    ${Physics_Interface_Files}
+    ${Physics_Jolt_Files}
     ${Binary_Files}
     ${Util_Files}
     ${CAD_Interface_Files}
@@ -371,6 +402,7 @@ target_link_libraries(CADacomb PUBLIC
     nlohmann_json::nlohmann_json
     smlib::sm_api
     smlib::smlib
+    Jolt::Jolt
 )
 
 if(OpenMP_CXX_FOUND)
@@ -409,6 +441,7 @@ if(CADACOMB_BUILD_TESTS)
         nlohmann_json::nlohmann_json
         smlib::sm_api
         smlib::smlib
+        Jolt::Jolt
     )
     if(OpenMP_CXX_FOUND)
         target_link_libraries(CADacombTest PUBLIC OpenMP::OpenMP_CXX)
