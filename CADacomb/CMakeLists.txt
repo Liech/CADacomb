@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20...3.30)
+﻿cmake_minimum_required(VERSION 3.20...3.30)
 
 project(CADacomb)
 
@@ -18,6 +18,8 @@ set(Physics_Interface_Files
     "Source/CADacomb/Physics/Interface/Physics.cpp"
     "Source/CADacomb/Physics/Interface/RigidBody.h"
     "Source/CADacomb/Physics/Interface/RigidBody.cpp"
+    "Source/CADacomb/Physics/Interface/SoftBody.h"
+    "Source/CADacomb/Physics/Interface/SoftBody.cpp"
 )
 source_group("Source/Physics/Interface" FILES ${Physics_Interface_Files})
 
@@ -32,6 +34,8 @@ set(Physics_Jolt_Files
     "Source/CADacomb/Physics/Jolt/PhysicsJ.cpp"
     "Source/CADacomb/Physics/Jolt/RigidBodyJ.h"
     "Source/CADacomb/Physics/Jolt/RigidBodyJ.cpp"
+    "Source/CADacomb/Physics/Jolt/SoftBodyJ.h"
+    "Source/CADacomb/Physics/Jolt/SoftBodyJ.cpp"
     "Source/CADacomb/Physics/Jolt/SVOShapeJ.h"
     "Source/CADacomb/Physics/Jolt/SVOShapeJ.cpp"
 )

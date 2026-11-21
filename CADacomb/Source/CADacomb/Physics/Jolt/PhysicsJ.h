@@ -24,6 +24,16 @@ namespace CADacomb::Physics
 
         std::shared_ptr<RigidBody> createRigidBody(const Triangulation& triangulation, const glm::dmat4& transformation, bool isStatic) override;
         std::shared_ptr<RigidBody> createRigidBody(const SVO<bool>& svo, const AABB3& localBounds, const glm::dmat4& transformation, bool isStatic) override;
+        std::shared_ptr<SoftBody>  createSoftBody(const Triangulation& triangulation,
+                                                  const glm::dmat4&    transformation,
+                                                  double               mass,
+                                                  double               pressure,
+                                                  double               edgeCompliance,
+                                                  double               bendCompliance,
+                                                  double               damping,
+                                                  double               friction,
+                                                  double               restitution,
+                                                  int                  solverIterations) override;
 
         void       setGravity(const glm::dvec3& gravity) override;
         glm::dvec3 getGravity() const override;

@@ -5,6 +5,7 @@
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/CollidePointResult.h>
 #include <Jolt/Physics/Collision/CollideShape.h>
+#include <Jolt/Physics/Collision/CollideSoftBodyVertexIterator.h>
 #include <Jolt/Physics/Collision/CollisionDispatch.h>
 #include <Jolt/Physics/Collision/PhysicsMaterial.h>
 #include <Jolt/Physics/Collision/RayCast.h>
@@ -253,7 +254,62 @@ namespace CADacomb::Physics
                                                  });
     }
 
-    void SVOShapeJ::CollideSoftBodyVertices(JPH::Mat44Arg, JPH::Vec3Arg, const JPH::CollideSoftBodyVertexIterator&, JPH::uint, int) const {}
+    void SVOShapeJ::CollideSoftBodyVertices(JPH::Mat44Arg                             inCenterOfMassTransform,
+                                            JPH::Vec3Arg                              inScale,
+                                            const JPH::CollideSoftBodyVertexIterator& inVertices,
+                                            JPH::uint                                 inNumVertices,
+                                            int                                       inCollidingShapeIndex) const
+    {
+        if (!svo || inNumVertices == 0)
+        {
+            return;
+        }
+
+        JPH::Mat44 invTransform = inCenterOfMassTransform.InversedRotationTranslation();
+        JPH::AABox vertBounds;
+        bool       hasActiveVertex = false;
+
+        for (JPH::CollideSoftBodyVertexIterator v = inVertices, end = inVertices + static_cast<int>(inNumVertices); v != end; ++v)
+        {
+            if (v.GetInvMass() > 0.0f)
+            {
+                vertBounds.Encapsulate(invTransform * v.GetPosition());
+                hasActiveVertex = true;
+            }
+        }
+
+        if (!hasActiveVertex)
+        {
+            return;
+        }
+
+        vertBounds.ExpandBy(JPH::Vec3::sReplicate(0.1f));
+
+        const glm::dvec3& com = massProperties.getCenterOfMass();
+        glm::dvec3        invScale(1.0 / static_cast<double>(inScale.GetX()), 1.0 / static_cast<double>(inScale.GetY()), 1.0 / static_cast<double>(inScale.GetZ()));
+        glm::dvec3        bMin(static_cast<double>(vertBounds.mMin.GetX()), static_cast<double>(vertBounds.mMin.GetY()), static_cast<double>(vertBounds.mMin.GetZ()));
+        glm::dvec3        bMax(static_cast<double>(vertBounds.mMax.GetX()), static_cast<double>(vertBounds.mMax.GetY()), static_cast<double>(vertBounds.mMax.GetZ()));
+        glm::dvec3        p0 = bMin * invScale + com;
+        glm::dvec3        p1 = bMax * invScale + com;
+        AABB3             queryBox(glm::min(p0, p1), glm::max(p0, p1));
+
+        SVOColliderQuery::queryOverlappingLeaves(
+          *svo,
+          localBounds,
+          queryBox,
+          [&](const AABB3& leafBox, uint32_t)
+          {
+              glm::dvec3 relCenter = leafBox.getCenter() - com;
+              JPH::Vec3  scaledOffset(static_cast<float>(relCenter.x) * inScale.GetX(), static_cast<float>(relCenter.y) * inScale.GetY(), static_cast<float>(relCenter.z) * inScale.GetZ());
+              glm::dvec3 halfSize = leafBox.getSize() * 0.5;
+              JPH::Vec3  halfExt(std::max(1e-4f, static_cast<float>(halfSize.x)), std::max(1e-4f, static_cast<float>(halfSize.y)), std::max(1e-4f, static_cast<float>(halfSize.z)));
+              float      convexRad = std::min({ JPH::cDefaultConvexRadius, halfExt.GetX() * 0.5f, halfExt.GetY() * 0.5f, halfExt.GetZ() * 0.5f });
+
+              JPH::BoxShape leafBoxShape(halfExt, convexRad);
+              JPH::Mat44    leafTransform = inCenterOfMassTransform * JPH::Mat44::sTranslation(scaledOffset);
+              leafBoxShape.CollideSoftBodyVertices(leafTransform, inScale, inVertices, inNumVertices, inCollidingShapeIndex);
+          });
+    }
 
     void SVOShapeJ::GetTrianglesStart(GetTrianglesContext&, const JPH::AABox&, JPH::Vec3Arg, JPH::QuatArg, JPH::Vec3Arg) const {}
 
