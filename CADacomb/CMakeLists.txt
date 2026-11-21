@@ -32,6 +32,8 @@ set(Physics_Jolt_Files
     "Source/CADacomb/Physics/Jolt/PhysicsJ.cpp"
     "Source/CADacomb/Physics/Jolt/RigidBodyJ.h"
     "Source/CADacomb/Physics/Jolt/RigidBodyJ.cpp"
+    "Source/CADacomb/Physics/Jolt/SVOShapeJ.h"
+    "Source/CADacomb/Physics/Jolt/SVOShapeJ.cpp"
 )
 source_group("Source/Physics/Jolt" FILES ${Physics_Jolt_Files})
 
@@ -304,9 +306,13 @@ set(Volume_SVO_Files
     "Source/CADacomb/Volume/SVO/SVOResult.h"
     "Source/CADacomb/Volume/SVO/SVOResult.cpp"
     "Source/CADacomb/Volume/SVO/SVOAxis.h"
+    "Source/CADacomb/Volume/SVO/SVOColliderQuery.h"
+    "Source/CADacomb/Volume/SVO/SVOColliderQuery.cpp"
     "Source/CADacomb/Volume/SVO/SVODualNode.h"
     "Source/CADacomb/Volume/SVO/SVODualTraversal.h"
     "Source/CADacomb/Volume/SVO/SVODualTraversal.cpp"
+    "Source/CADacomb/Volume/SVO/SVOMassProperties.h"
+    "Source/CADacomb/Volume/SVO/SVOMassProperties.cpp"
     "Source/CADacomb/Volume/SVO/BinaryVolumeToSVO.h"
     "Source/CADacomb/Volume/SVO/BinaryVolumeToSVO.cpp"
     "Source/CADacomb/Volume/SVO/SVO.h"

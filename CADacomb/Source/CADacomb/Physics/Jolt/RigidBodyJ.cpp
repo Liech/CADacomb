@@ -1,14 +1,21 @@
 ﻿#include "CADacomb/Physics/Jolt/RigidBodyJ.h"
 
 #include <Jolt/Physics/Body/BodyInterface.h>
+#include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
+#include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace CADacomb::Physics
 {
-    RigidBodyJ::RigidBodyJ(std::shared_ptr<JPH::PhysicsSystem> physicsSystemInput, JPH::BodyID bodyIdInput, const glm::dmat4& localScaleTransformInput, bool isStaticInput)
+    RigidBodyJ::RigidBodyJ(std::shared_ptr<JPH::PhysicsSystem> physicsSystemInput,
+                           JPH::BodyID                         bodyIdInput,
+                           const glm::dmat4&                   localScaleTransformInput,
+                           bool                                isStaticInput,
+                           JPH::Ref<SVOShapeJ>                 svoShapeInput)
       : physicsSystem(physicsSystemInput)
       , bodyId(bodyIdInput)
+      , svoShape(svoShapeInput)
       , localScaleTransform(localScaleTransformInput)
       , staticBody(isStaticInput)
     {
@@ -64,6 +71,30 @@ namespace CADacomb::Physics
                                                               JPH::RVec3(static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)),
                                                               JPH::Quat(static_cast<float>(rotation.x), static_cast<float>(rotation.y), static_cast<float>(rotation.z), static_cast<float>(rotation.w)),
                                                               staticBody ? JPH::EActivation::DontActivate : JPH::EActivation::Activate);
+        }
+    }
+
+    void RigidBodyJ::notifyGeometryChanged()
+    {
+        auto system = physicsSystem.lock();
+        if (!system || bodyId.IsInvalid())
+        {
+            return;
+        }
+
+        JPH::BodyInterface& bodyInterface = system->GetBodyInterface();
+        if (svoShape != nullptr)
+        {
+            JPH::Vec3 previousCOM = svoShape->GetCenterOfMass();
+            svoShape->refreshMassProperties();
+            bodyInterface.NotifyShapeChanged(bodyId, previousCOM, !staticBody, staticBody ? JPH::EActivation::DontActivate : JPH::EActivation::Activate);
+
+            JPH::RMat44 comTransform = bodyInterface.GetCenterOfMassTransform(bodyId);
+            JPH::AABox  worldBounds  = svoShape->GetWorldSpaceBounds(comTransform, JPH::Vec3::sReplicate(1.0f));
+            worldBounds.ExpandBy(JPH::Vec3::sReplicate(0.5f));
+            JPH::DefaultBroadPhaseLayerFilter broadPhaseFilter(system->GetObjectVsBroadPhaseLayerFilter(), 1);
+            JPH::DefaultObjectLayerFilter     objectFilter(system->GetObjectLayerPairFilter(), 1);
+            bodyInterface.ActivateBodiesInAABox(worldBounds, broadPhaseFilter, objectFilter);
         }
     }
 

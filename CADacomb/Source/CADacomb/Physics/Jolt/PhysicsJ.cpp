@@ -1,6 +1,7 @@
 ﻿#include "CADacomb/Physics/Jolt/PhysicsJ.h"
 
 #include "CADacomb/Physics/Jolt/RigidBodyJ.h"
+#include "CADacomb/Physics/Jolt/SVOShapeJ.h"
 
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/Memory.h>
@@ -49,6 +50,7 @@ namespace CADacomb::Physics
                                JPH::Factory::sInstance = new JPH::Factory();
                            }
                            JPH::RegisterTypes();
+                           SVOShapeJ::registerCollisionDispatch();
                        });
     }
 
@@ -75,6 +77,32 @@ namespace CADacomb::Physics
         JPH::BodyID         bodyId        = bodyInterface.CreateAndAddBody(settings, isStatic ? JPH::EActivation::DontActivate : JPH::EActivation::Activate);
 
         return std::make_shared<RigidBodyJ>(physicsSystem, bodyId, localScale, isStatic);
+    }
+
+    std::shared_ptr<RigidBody> PhysicsJ::createRigidBody(const SVO<bool>& svo, const AABB3& localBounds, const glm::dmat4& transformation, bool isStatic)
+    {
+        glm::dvec3 position;
+        glm::dquat rotation;
+        glm::dmat4 localScale;
+        RigidBodyJ::decomposeTransformation(transformation, position, rotation, localScale);
+
+        AABB3               scaledBounds = localBounds.transformed(localScale);
+        JPH::Ref<SVOShapeJ> svoShape     = new SVOShapeJ(svo, scaledBounds);
+
+        JPH::EMotionType motionType  = isStatic ? JPH::EMotionType::Static : JPH::EMotionType::Dynamic;
+        JPH::ObjectLayer objectLayer = isStatic ? ObjectLayerPairFilterJ::nonMovingLayer : ObjectLayerPairFilterJ::movingLayer;
+
+        JPH::BodyCreationSettings settings(svoShape,
+                                           JPH::RVec3(static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)),
+                                           JPH::Quat(static_cast<float>(rotation.x), static_cast<float>(rotation.y), static_cast<float>(rotation.z), static_cast<float>(rotation.w)),
+                                           motionType,
+                                           objectLayer);
+        settings.mAllowSleeping = false;
+
+        JPH::BodyInterface& bodyInterface = physicsSystem->GetBodyInterface();
+        JPH::BodyID         bodyId        = bodyInterface.CreateAndAddBody(settings, isStatic ? JPH::EActivation::DontActivate : JPH::EActivation::Activate);
+
+        return std::make_shared<RigidBodyJ>(physicsSystem, bodyId, localScale, isStatic, svoShape);
     }
 
     void PhysicsJ::setGravity(const glm::dvec3& gravity)
@@ -243,5 +271,44 @@ TEST_CASE("PhysicsJ/IncrementalStepsMatchSingleMergedStep")
     mergedPhysics->step(45.0 / 60.0);
 
     CHECK(incCube->getTransformation() == mrgCube->getTransformation());
+}
+
+TEST_CASE("PhysicsJ/SVOColliderAndDynamicSVOModification")
+{
+    std::unique_ptr<CADacomb::Physics::Physics> physics = std::make_unique<CADacomb::Physics::PhysicsJ>();
+
+    CADacomb::SVO<bool> floorSvo(16, false);
+    for (int x = 0; x < 16; x++)
+    {
+        for (int z = 0; z < 16; z++)
+        {
+            floorSvo.setVoxel(glm::ivec3(x, 7, z), true);
+        }
+    }
+    CADacomb::AABB3 floorBounds(glm::dvec3(-8.0, -8.0, -8.0), glm::dvec3(8.0, 8.0, 8.0));
+    auto            floorBody = physics->createRigidBody(floorSvo, floorBounds, glm::dmat4(1.0), true);
+
+    CADacomb::SVO<bool> fallingSvo(4, true);
+    CADacomb::AABB3     fallingBounds(glm::dvec3(-0.5, -0.5, -0.5), glm::dvec3(0.5, 0.5, 0.5));
+    glm::dmat4          fallingStart = glm::translate(glm::dmat4(1.0), glm::dvec3(0.0, 2.0, 0.0));
+    auto                fallingBody  = physics->createRigidBody(fallingSvo, fallingBounds, fallingStart, false);
+
+    physics->step(1.0);
+    double restingY = fallingBody->getTransformation()[3].y;
+    CHECK(restingY < 1.5);
+    CHECK(restingY > -0.2);
+
+    for (int x = 0; x < 16; x++)
+    {
+        for (int z = 0; z < 16; z++)
+        {
+            floorSvo.setVoxel(glm::ivec3(x, 7, z), false);
+        }
+    }
+    floorBody->notifyGeometryChanged();
+
+    physics->step(1.0);
+    double fallenThroughY = fallingBody->getTransformation()[3].y;
+    CHECK(fallenThroughY < -2.0);
 }
 #endif

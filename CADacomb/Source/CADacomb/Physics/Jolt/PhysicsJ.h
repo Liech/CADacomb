@@ -23,6 +23,7 @@ namespace CADacomb::Physics
         virtual ~PhysicsJ();
 
         std::shared_ptr<RigidBody> createRigidBody(const Triangulation& triangulation, const glm::dmat4& transformation, bool isStatic) override;
+        std::shared_ptr<RigidBody> createRigidBody(const SVO<bool>& svo, const AABB3& localBounds, const glm::dmat4& transformation, bool isStatic) override;
 
         void       setGravity(const glm::dvec3& gravity) override;
         glm::dvec3 getGravity() const override;

@@ -14,5 +14,6 @@ namespace CADacomb::Physics
         virtual bool       isStatic() const                                    = 0;
         virtual glm::dmat4 getTransformation() const                           = 0;
         virtual void       setTransformation(const glm::dmat4& transformation) = 0;
+        virtual void       notifyGeometryChanged()                             = 0;
     };
 }
