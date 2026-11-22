@@ -1,4 +1,4 @@
-﻿#include "SVOFile.h"
+#include "SVOFile.h"
 
 #include <cctype>
 #include <filesystem>
@@ -268,7 +268,6 @@ namespace CADacomb
         CHECK(loadedSvo->getVoxel(glm::ivec3(15, 15, 15)) == 9.0f);
         CHECK(loadedSvo->getVoxel(glm::ivec3(1, 1, 1)) == 0.0f);
         CHECK(loadedSvo->getRaw().size() == svo.getRaw().size());
-        CHECK(loadedSvo->getParents().size() == svo.getParents().size());
         CHECK(loadedSvo->getFreeBlocks().size() == svo.getFreeBlocks().size());
     }
 

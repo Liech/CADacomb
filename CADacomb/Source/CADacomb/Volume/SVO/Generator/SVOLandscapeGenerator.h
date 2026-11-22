@@ -47,6 +47,13 @@ namespace CADacomb
                                                            const glm::dvec3&      worldOffset = glm::dvec3(0.0),
                                                            const glm::dvec3&      worldSize   = glm::dvec3(1.0));
 
+        static void evaluateDensityBlock(const glm::ivec3&      blockMin,
+                                         uint32_t               blockSize,
+                                         double                 volumeHeight,
+                                         const LandscapeConfig& config,
+                                         const glm::dvec3&      worldOffset,
+                                         double*                outDensities);
+
         template<typename T = bool>
         static std::unique_ptr<SVO<T>> generateSVO(uint32_t                dimension,
                                                    const LandscapeConfig&  config      = {},
@@ -71,6 +78,13 @@ namespace CADacomb
         static double   grad(uint32_t hash, double x, double y, double z);
         static double   fade(double t);
         static double   lerp(double a, double b, double t);
+        static void     addPerlinOctaveBlock(const glm::ivec3& blockMin,
+                                             uint32_t          blockSize,
+                                             const glm::dvec3& worldOffset,
+                                             double            freq,
+                                             double            weight,
+                                             uint32_t          seed,
+                                             double*           outValues);
 
         template<typename T>
         static void fillChunkGridRecursive(std::vector<T>&        grid,
@@ -122,7 +136,7 @@ namespace CADacomb
             return;
         }
 
-        if (size > 2)
+        if (size > 4)
         {
             int half = size / 2;
             for (int cz = 0; cz < 2; cz++)
@@ -139,23 +153,21 @@ namespace CADacomb
             return;
         }
 
+        double densities[64];
+        evaluateDensityBlock(boxMin, static_cast<uint32_t>(size), totalVolumeHeight, config, worldOffset, densities);
+
         for (int lz = 0; lz < size; lz++)
         {
-            int z  = localMin.z + lz;
-            int pz = chunkMin.z + z;
+            int z = localMin.z + lz;
             for (int ly = 0; ly < size; ly++)
             {
-                int y  = localMin.y + ly;
-                int py = chunkMin.y + y;
+                int y = localMin.y + ly;
                 for (int lx = 0; lx < size; lx++)
                 {
-                    int x  = localMin.x + lx;
-                    int px = chunkMin.x + x;
-
-                    glm::dvec3 evalPos = glm::dvec3(px, py, pz) + worldOffset;
-                    double     density = evaluateDensity(evalPos, totalVolumeHeight, config);
-                    if (density > config.solidThreshold)
+                    size_t blockIdx = static_cast<size_t>(lx + ly * size + lz * size * size);
+                    if (densities[blockIdx] > config.solidThreshold)
                     {
+                        int    x   = localMin.x + lx;
                         size_t idx = static_cast<size_t>(x + y * chunkStep + z * chunkStep * chunkStep);
                         grid[idx]  = solidValue;
                     }
@@ -173,153 +185,43 @@ namespace CADacomb
                                                                uint32_t                chunkSize,
                                                                const MergeStrategy<T>& strategy)
     {
+        (void)chunkSize;
         assert(dimension > 0 && (dimension & (dimension - 1)) == 0);
-
-        auto svo = std::make_unique<SVO<T>>(dimension, emptyValue, strategy);
-
-        uint32_t step    = (chunkSize > 0) ? std::min(chunkSize, dimension) : std::min(32u, dimension);
-        uint32_t potStep = 1;
-        while (potStep * 2 <= step)
-        {
-            potStep *= 2;
-        }
-        step = std::max(1u, potStep);
 
         double totalVolumeHeight = static_cast<double>(dimension);
 
-        struct ChunkTask
+        auto classifyBox = [&](const glm::ivec3& boxMin, uint32_t boxSize, T& outUniformVal) -> bool
         {
-            glm::ivec3 min;
-            bool       isGuaranteedSolid = false;
+            glm::ivec3 sizeVec(static_cast<int>(boxSize));
+            auto [minDensity, maxDensity] = estimateDensityBounds(boxMin, sizeVec, totalVolumeHeight, config, worldOffset);
+
+            if (maxDensity <= config.solidThreshold)
+            {
+                outUniformVal = emptyValue;
+                return true;
+            }
+
+            if (minDensity > config.solidThreshold && !canCarveCaves(boxMin, sizeVec, totalVolumeHeight, config, worldOffset))
+            {
+                outUniformVal = solidValue;
+                return true;
+            }
+
+            return false;
         };
 
-        std::vector<ChunkTask> tasks;
+        auto evalBlock = [&](const glm::ivec3& blockMin, uint32_t blockSize, T* outBlock) -> void
         {
-            ProgressBar planningBar(1, "Planning landscape chunks...");
-
-            for (uint32_t z = 0; z < dimension; z += step)
+            double densities[64];
+            evaluateDensityBlock(blockMin, blockSize, totalVolumeHeight, config, worldOffset, densities);
+            size_t count = static_cast<size_t>(blockSize) * blockSize * blockSize;
+            for (size_t i = 0; i < count; i++)
             {
-                for (uint32_t y = 0; y < dimension; y += step)
-                {
-                    for (uint32_t x = 0; x < dimension; x += step)
-                    {
-                        if (planningBar.isCanceled())
-                        {
-                            return nullptr;
-                        }
-
-                        glm::ivec3 chunkMin(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z));
-                        auto [minDensity, maxDensity] = estimateDensityBounds(chunkMin, glm::ivec3(step), totalVolumeHeight, config, worldOffset);
-
-                        if (maxDensity <= config.solidThreshold)
-                        {
-                            continue;
-                        }
-
-                        ChunkTask task;
-                        task.min               = chunkMin;
-                        task.isGuaranteedSolid = (minDensity > config.solidThreshold && !canCarveCaves(chunkMin, glm::ivec3(step), totalVolumeHeight, config, worldOffset));
-                        tasks.push_back(task);
-                    }
-                }
+                outBlock[i] = (densities[i] > config.solidThreshold) ? solidValue : emptyValue;
             }
+        };
 
-            planningBar.addProgress(1);
-        }
-
-        if (tasks.empty())
-        {
-            return svo;
-        }
-
-        std::vector<std::unique_ptr<SVO<T>>> chunkSVOs(tasks.size());
-
-        {
-            ProgressBar evalBar(tasks.size(), "Evaluating terrain chunks");
-
-#pragma omp parallel for schedule(dynamic) shared(evalBar)
-            for (int i = 0; i < static_cast<int>(tasks.size()); i++)
-            {
-                if (evalBar.isCanceled())
-                {
-                    continue;
-                }
-
-                const auto& task = tasks[i];
-                if (task.isGuaranteedSolid)
-                {
-                    chunkSVOs[i] = std::make_unique<SVO<T>>(step, solidValue, svo->getMergeStrategy());
-                }
-                else
-                {
-                    size_t         totalChunkVoxels = static_cast<size_t>(step) * step * step;
-                    std::vector<T> grid(totalChunkVoxels, emptyValue);
-
-                    fillChunkGridRecursive(grid, glm::ivec3(0), static_cast<int>(step), task.min, static_cast<int>(step), totalVolumeHeight, config, worldOffset, solidValue, emptyValue);
-
-                    bool hasSolid = false;
-                    bool hasEmpty = false;
-                    for (size_t v = 0; v < totalChunkVoxels; v++)
-                    {
-                        if (grid[v] == solidValue)
-                        {
-                            hasSolid = true;
-                            if (hasEmpty)
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            hasEmpty = true;
-                            if (hasSolid)
-                            {
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!hasSolid)
-                    {
-                        chunkSVOs[i] = nullptr;
-                    }
-                    else if (!hasEmpty)
-                    {
-                        chunkSVOs[i] = std::make_unique<SVO<T>>(step, solidValue, svo->getMergeStrategy());
-                    }
-                    else
-                    {
-                        chunkSVOs[i] = std::make_unique<SVO<T>>(grid, step, svo->getMergeStrategy());
-                    }
-                }
-
-                evalBar.addProgress(1);
-            }
-
-            if (evalBar.isCanceled())
-            {
-                return nullptr;
-            }
-        }
-
-        {
-            ProgressBar assembleBar(tasks.size(), "Assembling octree");
-            for (size_t i = 0; i < tasks.size(); i++)
-            {
-                if (assembleBar.isCanceled())
-                {
-                    return nullptr;
-                }
-
-                if (chunkSVOs[i])
-                {
-                    svo->setSubSVO(tasks[i].min, *chunkSVOs[i]);
-                }
-                assembleBar.addProgress(1);
-            }
-        }
-
-        return svo;
+        return SVO<T>::buildTopDown(dimension, emptyValue, strategy, classifyBox, evalBlock, "Generating landscape SVO");
     }
 
     template<typename T>

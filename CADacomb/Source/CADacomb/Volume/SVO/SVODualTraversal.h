@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "SVO.h"
 #include "SVOAxis.h"
@@ -37,7 +37,7 @@ namespace CADacomb
 
       private:
         template<typename T>
-        static SVODualNode<T> getChild(const std::vector<SVONode<T>>& rawNodes, const SVODualNode<T>& parent, int childBit);
+        static SVODualNode<T> getChild(const PagedVector<SVONode<T>>& rawNodes, const SVODualNode<T>& parent, int childBit);
 
         static int getPosChild(SVOAxis ax, int k);
         static int getNegChild(SVOAxis ax, int k);
@@ -240,7 +240,7 @@ namespace CADacomb
     }
 
     template<typename T>
-    SVODualNode<T> SVODualTraversal::getChild(const std::vector<SVONode<T>>& rawNodes, const SVODualNode<T>& parent, int childBit)
+    SVODualNode<T> SVODualTraversal::getChild(const PagedVector<SVONode<T>>& rawNodes, const SVODualNode<T>& parent, int childBit)
     {
         uint32_t   half    = parent.size / 2;
         glm::ivec3 cOffset = parent.offset + glm::ivec3((childBit & 1) ? half : 0, (childBit & 2) ? half : 0, (childBit & 4) ? half : 0);

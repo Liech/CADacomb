@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <fstream>
 #include <istream>
@@ -116,13 +116,8 @@ namespace CADacomb
             }
         }
 
-        const auto& parents     = svo.getParents();
-        uint64_t    parentCount = static_cast<uint64_t>(parents.size());
+        uint64_t parentCount = 0;
         stream.write(reinterpret_cast<const char*>(&parentCount), sizeof(parentCount));
-        if (parentCount > 0)
-        {
-            stream.write(reinterpret_cast<const char*>(parents.data()), parentCount * sizeof(uint32_t));
-        }
 
         const auto& freeBlocks     = svo.getFreeBlocks();
         uint64_t    freeBlockCount = static_cast<uint64_t>(freeBlocks.size());
@@ -190,7 +185,7 @@ namespace CADacomb
         }
 
         ProgressBar             bar(nodeCount, "Loading SVO nodes");
-        std::vector<SVONode<T>> nodes(nodeCount);
+        PagedVector<SVONode<T>> nodes(nodeCount);
         for (uint64_t i = 0; i < nodeCount; i++)
         {
             uint32_t childPointer = 0xFFFFFFFF;
@@ -222,10 +217,9 @@ namespace CADacomb
         {
             throw std::runtime_error("Failed to read parent count");
         }
-        std::vector<uint32_t> parents(parentCount);
         if (parentCount > 0)
         {
-            stream.read(reinterpret_cast<char*>(parents.data()), parentCount * sizeof(uint32_t));
+            stream.seekg(static_cast<std::streamoff>(parentCount * sizeof(uint32_t)), std::ios::cur);
         }
 
         uint64_t freeBlockCount = 0;
@@ -241,6 +235,6 @@ namespace CADacomb
         }
 
         const MergeStrategy<T>& strategy = getMergeStrategyInstance<T>(mergeStrategyStr);
-        return std::make_unique<SVO<T>>(dimension, std::move(nodes), std::move(parents), std::move(freeBlocks), strategy);
+        return std::make_unique<SVO<T>>(dimension, std::move(nodes), std::move(freeBlocks), strategy);
     }
 }

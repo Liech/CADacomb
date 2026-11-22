@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CADacomb/Util/AABB3.h"
 #include "CADacomb/Volume/SVO/SVO.h"
@@ -27,7 +27,7 @@ namespace CADacomb
 
       private:
         static glm::ivec3 childOffset(short childIndex, const glm::ivec3& parentOffset, uint32_t parentDimension);
-        static void       traverseSingleNodes(const std::vector<SVONode<bool>>&                  nodes,
+        static void       traverseSingleNodes(const PagedVector<SVONode<bool>>&                  nodes,
                                               uint32_t                                           nodeIdx,
                                               const glm::ivec3&                                  nodeOff,
                                               uint32_t                                           nodeDim,
@@ -35,13 +35,13 @@ namespace CADacomb
                                               const glm::dvec3&                                  voxelScale,
                                               const AABB3&                                       queryLocalBounds,
                                               const std::function<void(const AABB3&, uint32_t)>& onSolidLeaf);
-        static void       traverseDualNodes(const std::vector<SVONode<bool>>&                                          nodesA,
+        static void       traverseDualNodes(const PagedVector<SVONode<bool>>&                                          nodesA,
                                             uint32_t                                                                   idxA,
                                             const glm::ivec3&                                                          offA,
                                             uint32_t                                                                   dimA,
                                             const glm::dvec3&                                                          minA,
                                             const glm::dvec3&                                                          scaleA,
-                                            const std::vector<SVONode<bool>>&                                          nodesB,
+                                            const PagedVector<SVONode<bool>>&                                          nodesB,
                                             uint32_t                                                                   idxB,
                                             const glm::ivec3&                                                          offB,
                                             uint32_t                                                                   dimB,

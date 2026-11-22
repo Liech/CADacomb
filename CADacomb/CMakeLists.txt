@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20...3.30)
+cmake_minimum_required(VERSION 3.20...3.30)
 
 project(CADacomb)
 
@@ -67,6 +67,8 @@ set(Util_Files
     "Source/CADacomb/Util/AABB3.cpp"
     "Source/CADacomb/Util/GUID.h"
     "Source/CADacomb/Util/GUID.cpp"
+    "Source/CADacomb/Util/PagedVector.h"
+    "Source/CADacomb/Util/PagedVector.cpp"
     "Source/CADacomb/Util/ProgressBar.h"
     "Source/CADacomb/Util/ProgressBar.cpp"
     "Source/CADacomb/Util/Ray.h"

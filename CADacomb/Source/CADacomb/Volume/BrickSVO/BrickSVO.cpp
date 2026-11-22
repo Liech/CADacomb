@@ -1,4 +1,4 @@
-﻿#include "BrickSVO.h"
+#include "BrickSVO.h"
 
 namespace CADacomb
 {
@@ -525,6 +525,65 @@ namespace CADacomb
         REQUIRE(min1.getNodes()[child1_depth3].brickPointer != 0xFFFFFFFF);
         REQUIRE(min2.getNodes()[child2_depth3].brickPointer != 0xFFFFFFFF);
         REQUIRE(minX.getNodes()[childX_depth3].brickPointer != 0xFFFFFFFF);
+    }
+
+    TEST_CASE("BrickSVO/FreeNodeBlockReuse", "[SVO][BrickSVO]")
+    {
+        BrickSVO<int, 8, false> svo(32, 0, 1);
+        svo.setVoxel({ 0, 0, 0 }, 1);
+        svo.setVoxel({ 24, 24, 24 }, 2);
+        svo.cleanup({ 0, 0, 0 }, { 32, 32, 32 });
+        size_t nodeCountAfterTwo = svo.getNodes().size();
+
+        svo.setVoxel({ 0, 0, 0 }, 0);
+        svo.cleanup({ 0, 0, 0 }, { 32, 32, 32 });
+
+        svo.setVoxel({ 0, 0, 0 }, 3);
+        svo.cleanup({ 0, 0, 0 }, { 32, 32, 32 });
+
+        CHECK(svo.getNodes().size() <= nodeCountAfterTwo);
+        CHECK(svo.getVoxel({ 0, 0, 0 }) == 3);
+        CHECK(svo.getVoxel({ 24, 24, 24 }) == 2);
+    }
+
+    TEST_CASE("BrickSVO/BuildTopDown", "[SVO][BrickSVO]")
+    {
+        auto classifyBox = [](const glm::ivec3& boxMin, uint32_t boxSize, int& outUniform) -> bool
+        {
+            if (boxMin.y + static_cast<int>(boxSize) <= 12)
+            {
+                outUniform = 1;
+                return true;
+            }
+            if (boxMin.y >= 20)
+            {
+                outUniform = 0;
+                return true;
+            }
+            return false;
+        };
+
+        auto evalBlock = [](const glm::ivec3& blockMin, uint32_t blockSize, int* outBlock) -> void
+        {
+            for (uint32_t z = 0; z < blockSize; z++)
+            {
+                for (uint32_t y = 0; y < blockSize; y++)
+                {
+                    int py = blockMin.y + static_cast<int>(y);
+                    for (uint32_t x = 0; x < blockSize; x++)
+                    {
+                        outBlock[x + y * blockSize + z * blockSize * blockSize] = (py < 16) ? 1 : 0;
+                    }
+                }
+            }
+        };
+
+        auto svo = BrickSVO<int, 8, false>::buildTopDown(32, 0, MostPrevalentMergeStrategy<int>::instance(), 1, classifyBox, evalBlock);
+        REQUIRE(svo != nullptr);
+        CHECK(svo->getVoxel({ 5, 4, 5 }) == 1);
+        CHECK(svo->getVoxel({ 5, 15, 5 }) == 1);
+        CHECK(svo->getVoxel({ 5, 16, 5 }) == 0);
+        CHECK(svo->getVoxel({ 5, 28, 5 }) == 0);
     }
 }
 #endif

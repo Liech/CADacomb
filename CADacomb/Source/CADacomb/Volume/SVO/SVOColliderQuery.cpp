@@ -1,4 +1,4 @@
-﻿#include "CADacomb/Volume/SVO/SVOColliderQuery.h"
+#include "CADacomb/Volume/SVO/SVOColliderQuery.h"
 
 namespace CADacomb
 {
@@ -59,7 +59,7 @@ namespace CADacomb
         return next;
     }
 
-    void SVOColliderQuery::traverseSingleNodes(const std::vector<SVONode<bool>>&                  nodes,
+    void SVOColliderQuery::traverseSingleNodes(const PagedVector<SVONode<bool>>&                  nodes,
                                                uint32_t                                           nodeIdx,
                                                const glm::ivec3&                                  nodeOff,
                                                uint32_t                                           nodeDim,
@@ -95,13 +95,13 @@ namespace CADacomb
         }
     }
 
-    void SVOColliderQuery::traverseDualNodes(const std::vector<SVONode<bool>>&                                          nodesA,
+    void SVOColliderQuery::traverseDualNodes(const PagedVector<SVONode<bool>>&                                          nodesA,
                                              uint32_t                                                                   idxA,
                                              const glm::ivec3&                                                          offA,
                                              uint32_t                                                                   dimA,
                                              const glm::dvec3&                                                          minA,
                                              const glm::dvec3&                                                          scaleA,
-                                             const std::vector<SVONode<bool>>&                                          nodesB,
+                                             const PagedVector<SVONode<bool>>&                                          nodesB,
                                              uint32_t                                                                   idxB,
                                              const glm::ivec3&                                                          offB,
                                              uint32_t                                                                   dimB,

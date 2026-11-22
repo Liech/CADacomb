@@ -1,4 +1,4 @@
-﻿#include "SVO.h"
+#include "SVO.h"
 
 namespace CADacomb
 {
@@ -552,6 +552,50 @@ namespace CADacomb
         CHECK(svo.getVoxel({ 0, 0, 0 }) == Catch::Approx(8.0f));
         CHECK(svo.getVoxel({ 1, 0, 0 }) == Catch::Approx(0.0f));
         CHECK(svo.getVoxel({ 0, 0, 0 }, 0) == Catch::Approx(1.0f));
+    }
+
+    TEST_CASE("SVO/BuildTopDown", "[SVO][BuildTopDown]")
+    {
+        auto classifyBox = [](const glm::ivec3& boxMin, uint32_t boxSize, bool& outUniform) -> bool
+        {
+            if (boxMin.y + static_cast<int>(boxSize) <= 10)
+            {
+                outUniform = true;
+                return true;
+            }
+            if (boxMin.y >= 22)
+            {
+                outUniform = false;
+                return true;
+            }
+            return false;
+        };
+
+        auto evalBlock = [](const glm::ivec3& blockMin, uint32_t blockSize, bool* outBlock) -> void
+        {
+            for (uint32_t z = 0; z < blockSize; z++)
+            {
+                for (uint32_t y = 0; y < blockSize; y++)
+                {
+                    int py = blockMin.y + static_cast<int>(y);
+                    for (uint32_t x = 0; x < blockSize; x++)
+                    {
+                        outBlock[x + y * blockSize + z * blockSize * blockSize] = (py < 16);
+                    }
+                }
+            }
+        };
+
+        auto svo = SVO<bool>::buildTopDown(32, false, MostPrevalentMergeStrategy<bool>::instance(), classifyBox, evalBlock);
+        REQUIRE(svo != nullptr);
+        CHECK(svo->getDimension() == 32);
+        CHECK(svo->getVoxel({ 4, 2, 4 }) == true);
+        CHECK(svo->getVoxel({ 4, 15, 4 }) == true);
+        CHECK(svo->getVoxel({ 4, 16, 4 }) == false);
+        CHECK(svo->getVoxel({ 4, 30, 4 }) == false);
+
+        svo->setVoxel({ 4, 30, 4 }, true);
+        CHECK(svo->getVoxel({ 4, 30, 4 }) == true);
     }
 }
 #endif
