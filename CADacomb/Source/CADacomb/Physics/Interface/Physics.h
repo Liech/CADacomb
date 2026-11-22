@@ -2,6 +2,7 @@
 
 #include "CADacomb/Physics/Interface/RigidBody.h"
 #include "CADacomb/Physics/Interface/SoftBody.h"
+#include "CADacomb/Physics/SoftBodyMode.h"
 #include "CADacomb/Triangle/Triangulation.h"
 #include "CADacomb/Util/AABB3.h"
 #include "CADacomb/Volume/SVO/SVO.h"
@@ -22,10 +23,13 @@ namespace CADacomb::Physics
         virtual std::shared_ptr<RigidBody> createRigidBody(const SVO<bool>& svo, const AABB3& localBounds, const glm::dmat4& transformation, bool isStatic) = 0;
         virtual std::shared_ptr<SoftBody>  createSoftBody(const Triangulation& triangulation,
                                                           const glm::dmat4&    transformation,
+                                                          SoftBodyMode         mode,
                                                           double               mass,
                                                           double               pressure,
                                                           double               edgeCompliance,
                                                           double               bendCompliance,
+                                                          double               volumeCompliance,
+                                                          int                  internalResolution,
                                                           double               damping,
                                                           double               friction,
                                                           double               restitution,

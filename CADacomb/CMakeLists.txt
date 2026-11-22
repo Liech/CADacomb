@@ -10,6 +10,7 @@ find_package(OpenMP)
 
 set(Physics_Files
     "Source/CADacomb/Physics/README.md"
+    "Source/CADacomb/Physics/SoftBodyMode.h"
 )
 source_group("Source/Physics" FILES ${Physics_Files})
 
@@ -24,8 +25,12 @@ set(Physics_Interface_Files
 source_group("Source/Physics/Interface" FILES ${Physics_Interface_Files})
 
 set(Physics_Jolt_Files
+    "Source/CADacomb/Physics/Jolt/BalloonSoftBodyBuilderJ.h"
+    "Source/CADacomb/Physics/Jolt/BalloonSoftBodyBuilderJ.cpp"
     "Source/CADacomb/Physics/Jolt/BroadPhaseLayerInterfaceJ.h"
     "Source/CADacomb/Physics/Jolt/BroadPhaseLayerInterfaceJ.cpp"
+    "Source/CADacomb/Physics/Jolt/InternalStrutsSoftBodyBuilderJ.h"
+    "Source/CADacomb/Physics/Jolt/InternalStrutsSoftBodyBuilderJ.cpp"
     "Source/CADacomb/Physics/Jolt/ObjectLayerPairFilterJ.h"
     "Source/CADacomb/Physics/Jolt/ObjectLayerPairFilterJ.cpp"
     "Source/CADacomb/Physics/Jolt/ObjectVsBroadPhaseLayerFilterJ.h"
@@ -34,10 +39,14 @@ set(Physics_Jolt_Files
     "Source/CADacomb/Physics/Jolt/PhysicsJ.cpp"
     "Source/CADacomb/Physics/Jolt/RigidBodyJ.h"
     "Source/CADacomb/Physics/Jolt/RigidBodyJ.cpp"
+    "Source/CADacomb/Physics/Jolt/SoftBodyBuilderJ.h"
+    "Source/CADacomb/Physics/Jolt/SoftBodyBuilderJ.cpp"
     "Source/CADacomb/Physics/Jolt/SoftBodyJ.h"
     "Source/CADacomb/Physics/Jolt/SoftBodyJ.cpp"
     "Source/CADacomb/Physics/Jolt/SVOShapeJ.h"
     "Source/CADacomb/Physics/Jolt/SVOShapeJ.cpp"
+    "Source/CADacomb/Physics/Jolt/VolumetricSoftBodyBuilderJ.h"
+    "Source/CADacomb/Physics/Jolt/VolumetricSoftBodyBuilderJ.cpp"
 )
 source_group("Source/Physics/Jolt" FILES ${Physics_Jolt_Files})
 

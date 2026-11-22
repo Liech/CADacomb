@@ -1,8 +1,12 @@
 ﻿#include "CADacomb/Physics/Jolt/PhysicsJ.h"
 
+#include "CADacomb/Physics/Jolt/BalloonSoftBodyBuilderJ.h"
+#include "CADacomb/Physics/Jolt/InternalStrutsSoftBodyBuilderJ.h"
 #include "CADacomb/Physics/Jolt/RigidBodyJ.h"
 #include "CADacomb/Physics/Jolt/SVOShapeJ.h"
+#include "CADacomb/Physics/Jolt/SoftBodyBuilderJ.h"
 #include "CADacomb/Physics/Jolt/SoftBodyJ.h"
+#include "CADacomb/Physics/Jolt/VolumetricSoftBodyBuilderJ.h"
 
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/Memory.h>
@@ -17,8 +21,6 @@
 #include <Jolt/RegisterTypes.h>
 #include <algorithm>
 #include <cmath>
-#include <map>
-#include <tuple>
 
 namespace CADacomb::Physics
 {
@@ -112,10 +114,13 @@ namespace CADacomb::Physics
 
     std::shared_ptr<SoftBody> PhysicsJ::createSoftBody(const Triangulation& triangulation,
                                                        const glm::dmat4&    transformation,
+                                                       SoftBodyMode         mode,
                                                        double               mass,
                                                        double               pressure,
                                                        double               edgeCompliance,
                                                        double               bendCompliance,
+                                                       double               volumeCompliance,
+                                                       int                  internalResolution,
                                                        double               damping,
                                                        double               friction,
                                                        double               restitution,
@@ -126,105 +131,22 @@ namespace CADacomb::Physics
         glm::dmat4 localScale;
         RigidBodyJ::decomposeTransformation(transformation, position, rotation, localScale);
 
-        std::vector<size_t>                                     originalToWelded(triangulation.vertices.size(), 0);
-        std::vector<glm::dvec3>                                 weldedPositions;
-        std::map<std::tuple<int64_t, int64_t, int64_t>, size_t> weldMap;
-        const double                                            weldScale = 100000.0;
-
-        for (size_t i = 0; i < triangulation.vertices.size(); i++)
+        std::unique_ptr<SoftBodyBuilderJ> builder;
+        if (mode == SoftBodyMode::InternalStruts)
         {
-            glm::dvec3 sv = glm::dvec3(localScale * glm::dvec4(triangulation.vertices[i], 1.0));
-            auto       key =
-              std::make_tuple(static_cast<int64_t>(std::llround(sv.x * weldScale)), static_cast<int64_t>(std::llround(sv.y * weldScale)), static_cast<int64_t>(std::llround(sv.z * weldScale)));
-            auto it = weldMap.find(key);
-            if (it != weldMap.end())
-            {
-                originalToWelded[i] = it->second;
-            }
-            else
-            {
-                size_t newIdx = weldedPositions.size();
-                weldedPositions.push_back(sv);
-                weldMap[key]        = newIdx;
-                originalToWelded[i] = newIdx;
-            }
+            builder = std::make_unique<InternalStrutsSoftBodyBuilderJ>();
+        }
+        else if (mode == SoftBodyMode::Volumetric)
+        {
+            builder = std::make_unique<VolumetricSoftBodyBuilderJ>();
+        }
+        else
+        {
+            builder = std::make_unique<BalloonSoftBodyBuilderJ>();
         }
 
-        JPH::Ref<JPH::SoftBodySharedSettings> sharedSettings  = new JPH::SoftBodySharedSettings();
-        const float                           particleCount   = std::max(1.0f, static_cast<float>(weldedPositions.size()));
-        const float                           totalMass       = std::max(1e-4f, static_cast<float>(mass));
-        const float                           invParticleMass = particleCount / totalMass;
-
-        sharedSettings->mVertices.reserve(weldedPositions.size());
-        for (const auto& wp : weldedPositions)
-        {
-            JPH::SoftBodySharedSettings::Vertex v;
-            v.mPosition = JPH::Float3(static_cast<float>(wp.x), static_cast<float>(wp.y), static_cast<float>(wp.z));
-            v.mVelocity = JPH::Float3(0.0f, 0.0f, 0.0f);
-            v.mInvMass  = invParticleMass;
-            sharedSettings->mVertices.push_back(v);
-        }
-
-        glm::dvec3 centroid(0.0);
-        if (!weldedPositions.empty())
-        {
-            for (const auto& wp : weldedPositions)
-            {
-                centroid += wp;
-            }
-            centroid /= static_cast<double>(weldedPositions.size());
-        }
-
-        double signedVolumeSix = 0.0;
-        for (size_t i = 0; i + 2 < triangulation.indices.size(); i += 3)
-        {
-            size_t orig0 = triangulation.indices[i];
-            size_t orig1 = triangulation.indices[i + 1];
-            size_t orig2 = triangulation.indices[i + 2];
-            if (orig0 < originalToWelded.size() && orig1 < originalToWelded.size() && orig2 < originalToWelded.size())
-            {
-                size_t w0 = originalToWelded[orig0];
-                size_t w1 = originalToWelded[orig1];
-                size_t w2 = originalToWelded[orig2];
-                if (w0 != w1 && w1 != w2 && w2 != w0)
-                {
-                    glm::dvec3 p0 = weldedPositions[w0] - centroid;
-                    glm::dvec3 p1 = weldedPositions[w1] - centroid;
-                    glm::dvec3 p2 = weldedPositions[w2] - centroid;
-                    signedVolumeSix += glm::dot(glm::cross(p1 - p0, p2 - p0), p0);
-                }
-            }
-        }
-
-        const bool flipWinding = signedVolumeSix < 0.0;
-        for (size_t i = 0; i + 2 < triangulation.indices.size(); i += 3)
-        {
-            size_t orig0 = triangulation.indices[i];
-            size_t orig1 = triangulation.indices[i + 1];
-            size_t orig2 = triangulation.indices[i + 2];
-            if (orig0 < originalToWelded.size() && orig1 < originalToWelded.size() && orig2 < originalToWelded.size())
-            {
-                JPH::uint32 w0 = static_cast<JPH::uint32>(originalToWelded[orig0]);
-                JPH::uint32 w1 = static_cast<JPH::uint32>(originalToWelded[orig1]);
-                JPH::uint32 w2 = static_cast<JPH::uint32>(originalToWelded[orig2]);
-                if (w0 != w1 && w1 != w2 && w2 != w0)
-                {
-                    if (flipWinding)
-                    {
-                        sharedSettings->AddFace(JPH::SoftBodySharedSettings::Face(w0, w2, w1));
-                    }
-                    else
-                    {
-                        sharedSettings->AddFace(JPH::SoftBodySharedSettings::Face(w0, w1, w2));
-                    }
-                }
-            }
-        }
-
-        JPH::SoftBodySharedSettings::VertexAttributes vertexAttributes(
-          static_cast<float>(std::max(0.0, edgeCompliance)), static_cast<float>(std::max(0.0, edgeCompliance)), static_cast<float>(std::max(0.0, bendCompliance)));
-        sharedSettings->CreateConstraints(&vertexAttributes, 1, JPH::SoftBodySharedSettings::EBendType::Distance);
-        sharedSettings->Optimize();
+        std::vector<size_t>                   originalToWelded;
+        JPH::Ref<JPH::SoftBodySharedSettings> sharedSettings = builder->build(triangulation, localScale, mass, edgeCompliance, bendCompliance, volumeCompliance, internalResolution, originalToWelded);
 
         JPH::SoftBodyCreationSettings creationSettings(sharedSettings,
                                                        JPH::RVec3(static_cast<float>(position.x), static_cast<float>(position.y), static_cast<float>(position.z)),
@@ -234,7 +156,7 @@ namespace CADacomb::Physics
         creationSettings.mLinearDamping        = static_cast<float>(std::max(0.0, damping));
         creationSettings.mFriction             = static_cast<float>(std::max(0.0, friction));
         creationSettings.mRestitution          = static_cast<float>(std::clamp(restitution, 0.0, 1.0));
-        creationSettings.mPressure             = static_cast<float>(std::max(0.0, pressure));
+        creationSettings.mPressure             = builder->resolvePressure(pressure);
         creationSettings.mUpdatePosition       = true;
         creationSettings.mMakeRotationIdentity = false;
         creationSettings.mAllowSleeping        = false;
@@ -462,7 +384,7 @@ TEST_CASE("PhysicsJ/SoftBodyDeformsAndSettlesOnStaticFloor")
 
     CADacomb::Triangulation softMesh = CADacomb::BaseShapeGenerator::sphere(1.0f, 12, 12);
     glm::dmat4              softTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(0.0, 1.8, 0.0));
-    auto                    softBody = physics->createSoftBody(softMesh, softTf, 1.0, 1500.0, 0.0001, 0.001, 0.2, 0.3, 0.0, 10);
+    auto                    softBody = physics->createSoftBody(softMesh, softTf, CADacomb::Physics::SoftBodyMode::Balloon, 1.0, 1500.0, 0.0001, 0.001, 0.0001, 4, 0.2, 0.3, 0.0, 10);
 
     std::vector<glm::dvec3> initialVerts = softBody->getDeformedVertices();
     REQUIRE(initialVerts.size() == softMesh.vertices.size());
@@ -485,5 +407,31 @@ TEST_CASE("PhysicsJ/SoftBodyDeformsAndSettlesOnStaticFloor")
         }
     }
     CHECK(anyVertexDeformed);
+}
+
+TEST_CASE("PhysicsJ/SoftBodyInternalStrutsAndVolumetricModes")
+{
+    std::unique_ptr<CADacomb::Physics::Physics> physics = std::make_unique<CADacomb::Physics::PhysicsJ>();
+
+    CADacomb::Triangulation floorMesh = CADacomb::BaseShapeGenerator::box(20.0f, 1.0f, 20.0f);
+    glm::dmat4              floorTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(0.0, -1.0, 0.0));
+    auto                    floorBody = physics->createRigidBody(floorMesh, floorTf, true);
+
+    CADacomb::Triangulation softMesh = CADacomb::BaseShapeGenerator::sphere(1.0f, 10, 10);
+    glm::dmat4              strutsTf = glm::translate(glm::dmat4(1.0), glm::dvec3(-2.5, 1.8, 0.0));
+    auto                    strutsSb = physics->createSoftBody(softMesh, strutsTf, CADacomb::Physics::SoftBodyMode::InternalStruts, 1.0, 0.0, 0.0001, 0.001, 0.0002, 4, 0.2, 0.4, 0.0, 12);
+
+    glm::dmat4 volTf = glm::translate(glm::dmat4(1.0), glm::dvec3(2.5, 1.8, 0.0));
+    auto       volSb = physics->createSoftBody(softMesh, volTf, CADacomb::Physics::SoftBodyMode::Volumetric, 1.0, 0.0, 0.0001, 0.001, 0.0002, 4, 0.2, 0.4, 0.0, 12);
+
+    physics->step(1.0);
+
+    CHECK(strutsSb->getDeformedVertices().size() == softMesh.vertices.size());
+    CHECK(strutsSb->getTransformation()[3].y < 1.8);
+    CHECK(strutsSb->getTransformation()[3].y > -0.5);
+
+    CHECK(volSb->getDeformedVertices().size() == softMesh.vertices.size());
+    CHECK(volSb->getTransformation()[3].y < 1.8);
+    CHECK(volSb->getTransformation()[3].y > -0.5);
 }
 #endif

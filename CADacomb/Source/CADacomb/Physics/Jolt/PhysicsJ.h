@@ -26,10 +26,13 @@ namespace CADacomb::Physics
         std::shared_ptr<RigidBody> createRigidBody(const SVO<bool>& svo, const AABB3& localBounds, const glm::dmat4& transformation, bool isStatic) override;
         std::shared_ptr<SoftBody>  createSoftBody(const Triangulation& triangulation,
                                                   const glm::dmat4&    transformation,
+                                                  SoftBodyMode         mode,
                                                   double               mass,
                                                   double               pressure,
                                                   double               edgeCompliance,
                                                   double               bendCompliance,
+                                                  double               volumeCompliance,
+                                                  int                  internalResolution,
                                                   double               damping,
                                                   double               friction,
                                                   double               restitution,
