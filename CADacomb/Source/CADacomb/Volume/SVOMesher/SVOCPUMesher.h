@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CADacomb/Triangle/Triangulation.h"
 #include "CADacomb/Volume/SVO/SVO.h"
@@ -32,6 +32,15 @@ namespace CADacomb
 
         template<typename T = bool>
         static void meshChunk(const SVO<T>& svo, MeshChunk& chunk);
+
+        template<typename T = bool>
+        static void meshChunkWithBoundaries(const SVO<T>&             svo,
+                                            const glm::ivec3&         minBound,
+                                            uint32_t                  size,
+                                            int                       lodLevel,
+                                            const std::array<int, 6>& neighborLODs,
+                                            std::vector<PackedQuad>&  outQuads,
+                                            uint32_t&                 outCoordShift);
 
         template<typename T>
         static void meshChunks(const SVO<T>& svo, std::vector<MeshChunk>& chunks);
@@ -269,5 +278,174 @@ namespace CADacomb
         uint32_t masterDim      = svo.getDimension();
         double   voxelWorldSize = (masterDim > 0) ? (options.size.x / static_cast<double>(masterDim)) : 1.0;
         return extractTriangulation(chunks, options.origin, voxelWorldSize);
+    }
+
+    template<typename T>
+    void SVOCPUMesher::meshChunkWithBoundaries(const SVO<T>&             svo,
+                                               const glm::ivec3&         minBound,
+                                               uint32_t                  size,
+                                               int                       lodLevel,
+                                               const std::array<int, 6>& neighborLODs,
+                                               std::vector<PackedQuad>&  outQuads,
+                                               uint32_t&                 outCoordShift)
+    {
+        outQuads.clear();
+        outCoordShift = 0;
+
+        uint32_t masterDim = svo.getDimension();
+        if (masterDim == 0 || size == 0)
+        {
+            return;
+        }
+
+        auto isSolid = [](const T& val) -> bool
+        {
+            if constexpr (std::is_same_v<T, bool>)
+            {
+                return val;
+            }
+            else if constexpr (requires { val.fill; })
+            {
+                return val.fill > 0;
+            }
+            else if constexpr (requires { val > 0; })
+            {
+                return val > 0;
+            }
+            else
+            {
+                return static_cast<bool>(val);
+            }
+        };
+
+        auto getMatId = [](const T& val) -> uint32_t
+        {
+            if constexpr (std::is_integral_v<T>)
+            {
+                return static_cast<uint32_t>(val);
+            }
+            else
+            {
+                return 1u;
+            }
+        };
+
+        auto getScaleExp = [](uint32_t scale) -> uint32_t
+        {
+            uint32_t exp = 0;
+            while (scale >>= 1)
+            {
+                exp++;
+            }
+            return exp;
+        };
+
+        SVODualNode<T> rootNode = SVODualTraversal::findSubtreeNode(svo, minBound, size);
+        if (rootNode.isVirtual || (rootNode.isLeaf && !isSolid(rootNode.value)))
+        {
+            return;
+        }
+
+        uint32_t coordShift = 0;
+        while ((size >> coordShift) > 1024u)
+        {
+            coordShift++;
+        }
+        outCoordShift = coordShift;
+
+        uint32_t minAllowedCell = 1u << coordShift;
+        uint32_t cellSize       = std::clamp(1u << std::max(0, lodLevel), minAllowedCell, size);
+
+        auto emitQuad = [&](const SVODualNode<T>& nodeA, const SVODualNode<T>& nodeB, SVOAxis axis, bool allowPositiveDir, bool allowNegativeDir) -> void
+        {
+            bool solidA = !nodeA.isVirtual && isSolid(nodeA.value);
+            bool solidB = !nodeB.isVirtual && isSolid(nodeB.value);
+            if (!solidA && !solidB)
+            {
+                return;
+            }
+            if (solidA && solidB && nodeA.value == nodeB.value)
+            {
+                return;
+            }
+
+            uint32_t   s             = std::min(nodeA.size, nodeB.size);
+            uint32_t   scaleExp      = getScaleExp(s) - coordShift;
+            int        axisIdx       = static_cast<int>(axis);
+            glm::ivec3 smallerOffset = (nodeA.size <= nodeB.size) ? nodeA.offset : nodeB.offset;
+            int        planeCoord    = nodeB.offset[axisIdx];
+
+            if (solidA && allowPositiveDir)
+            {
+                glm::ivec3 localPos = smallerOffset - minBound;
+                localPos[axisIdx]   = (planeCoord - static_cast<int>(s)) - minBound[axisIdx];
+                uint32_t dir        = static_cast<uint32_t>(2 * axisIdx + 1);
+                outQuads.push_back(PackedQuad::create(static_cast<uint32_t>(localPos.x) >> coordShift,
+                                                      static_cast<uint32_t>(localPos.y) >> coordShift,
+                                                      static_cast<uint32_t>(localPos.z) >> coordShift,
+                                                      dir,
+                                                      scaleExp,
+                                                      getMatId(nodeA.value)));
+            }
+
+            if (solidB && allowNegativeDir)
+            {
+                glm::ivec3 localPos = smallerOffset - minBound;
+                localPos[axisIdx]   = planeCoord - minBound[axisIdx];
+                uint32_t dir        = static_cast<uint32_t>(2 * axisIdx + 0);
+                outQuads.push_back(PackedQuad::create(static_cast<uint32_t>(localPos.x) >> coordShift,
+                                                      static_cast<uint32_t>(localPos.y) >> coordShift,
+                                                      static_cast<uint32_t>(localPos.z) >> coordShift,
+                                                      dir,
+                                                      scaleExp,
+                                                      getMatId(nodeB.value)));
+            }
+        };
+
+        auto isLeafSelf = [&](const SVODualNode<T>& node) -> bool { return node.size <= cellSize; };
+
+        if (!rootNode.isLeaf)
+        {
+            auto onNode = [](const SVODualNode<T>&) {};
+            auto onFace = [&](const SVODualNode<T>& nodeA, const SVODualNode<T>& nodeB, SVOAxis ax) -> void { emitQuad(nodeA, nodeB, ax, true, true); };
+            SVODualTraversal::traverseSubtree(svo, rootNode, isLeafSelf, onNode, onFace);
+        }
+
+        for (int dir = 0; dir < 6; dir++)
+        {
+            int     axisIdx    = dir / 2;
+            bool    isPositive = (dir & 1) != 0;
+            SVOAxis axis       = static_cast<SVOAxis>(axisIdx);
+
+            glm::ivec3 neighborOffset = minBound;
+            neighborOffset[axisIdx] += isPositive ? static_cast<int>(size) : -static_cast<int>(size);
+
+            SVODualNode<T> neighborNode = SVODualTraversal::findSubtreeNode(svo, neighborOffset, size);
+            uint32_t       neighborCell = std::clamp(1u << std::max(0, neighborLODs[static_cast<size_t>(dir)]), minAllowedCell, size);
+            auto           isLeafNbr    = [&](const SVODualNode<T>& node) -> bool { return node.size <= neighborCell; };
+
+            if (isPositive)
+            {
+                SVODualTraversal::traverseFacePair(
+                  svo,
+                  rootNode,
+                  neighborNode,
+                  axis,
+                  isLeafSelf,
+                  isLeafNbr,
+                  [&](const SVODualNode<T>& nodeA, const SVODualNode<T>& nodeB, SVOAxis ax) { emitQuad(nodeA, nodeB, ax, true, false); });
+            }
+            else
+            {
+                SVODualTraversal::traverseFacePair(
+                  svo,
+                  neighborNode,
+                  rootNode,
+                  axis,
+                  isLeafNbr,
+                  isLeafSelf,
+                  [&](const SVODualNode<T>& nodeA, const SVODualNode<T>& nodeB, SVOAxis ax) { emitQuad(nodeA, nodeB, ax, false, true); });
+            }
+        }
     }
 }
