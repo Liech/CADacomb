@@ -111,8 +111,29 @@ namespace CADacomb::Render
             stagingBatch.resize(count);
             for (size_t i = 0; i < count; i++)
             {
-                const auto& src = rawNodes[offset + i];
-                stagingBatch[i] = GPUSVONode(src.childPointer, src.value ? 1u : 0u);
+                const auto& src        = rawNodes[offset + i];
+                uint32_t    materialId = src.value ? 1u : 0u;
+                uint32_t    childPtr   = src.childPointer;
+                uint32_t    validMask  = 0u;
+
+                if (childPtr != 0xFFFFFFFFu)
+                {
+                    for (uint32_t c = 0; c < 8u; c++)
+                    {
+                        const auto& child = rawNodes[static_cast<size_t>(childPtr) + c];
+                        if (child.value || child.childPointer != 0xFFFFFFFFu)
+                        {
+                            validMask |= (1u << c);
+                        }
+                    }
+
+                    if (validMask == 0u)
+                    {
+                        childPtr = 0xFFFFFFFFu;
+                    }
+                }
+
+                stagingBatch[i] = GPUSVONode(childPtr, materialId, validMask);
             }
             svoNodeBuffer->uploadToGPU(stagingBatch.data(), count, offset);
             offset += count;

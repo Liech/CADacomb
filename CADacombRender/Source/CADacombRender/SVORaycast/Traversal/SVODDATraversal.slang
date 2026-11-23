@@ -6,7 +6,7 @@ import SVORaycast.LOD.ILODPolicy;
 import SVORaycast.Storage.GPUSVONode;
 import SVORaycast.Storage.ISVOStorage;
 
-// Stack-based front-to-back octree slab traversal parameterized on storage and LOD policy.
+// Laine-Karras parametric octree DDA traversal parameterized on storage and LOD policy.
 public RayHit traverseSVO<TStorage : ISVOStorage, TLOD : ILODPolicy>(Ray ray, TStorage storage, TLOD lodPolicy, uint maxSteps)
 {
     uint dim = storage.getDimension();
@@ -15,129 +15,262 @@ public RayHit traverseSVO<TStorage : ISVOStorage, TLOD : ILODPolicy>(Ray ray, TS
         return RayHit::miss(0u);
     }
 
-    uint2  stackNodeDepth[48];
-    uint4  stackMinSize[48];
-    float2 stackRange[48];
+    const int   sMax   = 23;
+    const float eps    = 1e-12;
+    float       dimF   = float(dim);
+    float       invDim = 1.0 / dimF;
 
-    int sp            = 1;
-    stackNodeDepth[0] = uint2(0u, 0u);
-    stackMinSize[0]   = uint4(0u, 0u, 0u, dim);
-    stackRange[0]     = float2(ray.tMin, ray.tMax);
+    float3 p = ray.origin * invDim + 1.0;
+    float3 d = ray.direction;
+    if (abs(d.x) < eps)
+    {
+        d.x = d.x < 0.0 ? -eps : eps;
+    }
+    if (abs(d.y) < eps)
+    {
+        d.y = d.y < 0.0 ? -eps : eps;
+    }
+    if (abs(d.z) < eps)
+    {
+        d.z = d.z < 0.0 ? -eps : eps;
+    }
+
+    float3 tCoef      = 1.0 / -abs(d);
+    float3 tBias      = tCoef * p;
+    uint   octantMask = 0u;
+
+    if (d.x > 0.0)
+    {
+        octantMask |= 1u;
+        tBias.x = 3.0 * tCoef.x - tBias.x;
+    }
+    if (d.y > 0.0)
+    {
+        octantMask |= 2u;
+        tBias.y = 3.0 * tCoef.y - tBias.y;
+    }
+    if (d.z > 0.0)
+    {
+        octantMask |= 4u;
+        tBias.z = 3.0 * tCoef.z - tBias.z;
+    }
+
+    float tMin = max(max(2.0 * tCoef.x - tBias.x, 2.0 * tCoef.y - tBias.y), 2.0 * tCoef.z - tBias.z);
+    float tMax = min(min(tCoef.x - tBias.x, tCoef.y - tBias.y), tCoef.z - tBias.z);
+    tMin       = max(tMin, ray.tMin * invDim);
+    tMax       = min(tMax, ray.tMax * invDim);
+
+    if (tMin >= tMax)
+    {
+        return RayHit::miss(0u);
+    }
+
+    uint       parent     = 0u;
+    GPUSVONode parentNode = storage.getNode(0u);
+
+    if (parentNode.isLeaf() || dim <= 1u || lodPolicy.shouldStopAtNode(tMin * dimF, dimF, 0u))
+    {
+        uint matId = parentNode.getMaterialId();
+        if (storage.isSolid(matId))
+        {
+            float3 tEnterPlane = 2.0 * tCoef - tBias;
+            float3 normal      = float3(0.0, 1.0, 0.0);
+            if (tEnterPlane.x >= tEnterPlane.y && tEnterPlane.x >= tEnterPlane.z)
+            {
+                normal = float3(ray.direction.x < 0.0 ? 1.0 : -1.0, 0.0, 0.0);
+            }
+            else if (tEnterPlane.y >= tEnterPlane.z)
+            {
+                normal = float3(0.0, ray.direction.y < 0.0 ? 1.0 : -1.0, 0.0);
+            }
+            else
+            {
+                normal = float3(0.0, 0.0, ray.direction.z < 0.0 ? 1.0 : -1.0);
+            }
+
+            RayHit hit;
+            hit.hit           = true;
+            hit.t             = tMin * dimF;
+            hit.positionLocal = ray.at(hit.t);
+            hit.normalLocal   = normal;
+            hit.depth         = 0u;
+            hit.steps         = 1u;
+            hit.value         = matId;
+            return hit;
+        }
+        return RayHit::miss(1u);
+    }
+
+    uint  stackParent[23];
+    float stackTMax[23];
+
+    int    scale     = sMax - 1;
+    float  scaleExp2 = 0.5;
+    float3 pos       = float3(1.0, 1.0, 1.0);
+    uint   idx       = 0u;
+
+    if (1.5 * tCoef.x - tBias.x > tMin)
+    {
+        idx ^= 1u;
+        pos.x = 1.5;
+    }
+    if (1.5 * tCoef.y - tBias.y > tMin)
+    {
+        idx ^= 2u;
+        pos.y = 1.5;
+    }
+    if (1.5 * tCoef.z - tBias.z > tMin)
+    {
+        idx ^= 4u;
+        pos.z = 1.5;
+    }
 
     uint steps = 0u;
 
-    while (sp > 0 && steps < maxSteps)
+    while (scale < sMax && steps < maxSteps)
     {
-        sp--;
         steps++;
 
-        uint  nodeIdx  = stackNodeDepth[sp].x;
-        uint  depth    = stackNodeDepth[sp].y;
-        uint3 nodeMin  = stackMinSize[sp].xyz;
-        uint  nodeSize = stackMinSize[sp].w;
-        float tEnter   = stackRange[sp].x;
-        float tExit    = stackRange[sp].y;
+        float3 tCorner = pos * tCoef - tBias;
+        float  tcMax   = min(min(tCorner.x, tCorner.y), tCorner.z);
 
-        GPUSVONode node   = storage.getNode(nodeIdx);
-        bool       isLeaf = (node.childPointer == 0xFFFFFFFFu) || (nodeSize <= 1u) || lodPolicy.shouldStopAtNode(tEnter, float(nodeSize), depth);
+        uint realOctant = idx ^ octantMask;
+        uint validMask  = parentNode.getValidMask();
 
-        if (isLeaf)
+        if ((validMask & (1u << realOctant)) != 0u && tMin <= tMax)
         {
-            if (storage.isSolid(node.value))
+            float tvMax = min(tMax, tcMax);
+            if (tMin <= tvMax)
             {
-                float3 bMin = float3(nodeMin);
-                float3 bMax = float3(nodeMin + uint3(nodeSize));
-                float3 t0   = (bMin - ray.origin) * ray.invDirection;
-                float3 t1   = (bMax - ray.origin) * ray.invDirection;
-                float3 tLow = min(t0, t1);
+                uint       childIdx  = parentNode.childPointer + realOctant;
+                GPUSVONode childNode = storage.getNode(childIdx);
+                uint       depth     = uint(sMax - scale);
+                float      nodeSize  = dimF * scaleExp2;
 
-                float3 normal = float3(0.0, 1.0, 0.0);
-                if (tLow.x >= tLow.y && tLow.x >= tLow.z)
+                bool stopHere = childNode.isLeaf() || (nodeSize <= 1.0) || lodPolicy.shouldStopAtNode(tMin * dimF, nodeSize, depth);
+                if (stopHere)
                 {
-                    normal = float3(ray.direction.x < 0.0 ? 1.0 : -1.0, 0.0, 0.0);
-                }
-                else if (tLow.y >= tLow.z)
-                {
-                    normal = float3(0.0, ray.direction.y < 0.0 ? 1.0 : -1.0, 0.0);
+                    uint matId = childNode.getMaterialId();
+                    if (storage.isSolid(matId))
+                    {
+                        float3 tEnterPlane = (pos + scaleExp2) * tCoef - tBias;
+                        float3 normal      = float3(0.0, 1.0, 0.0);
+                        if (tEnterPlane.x >= tEnterPlane.y && tEnterPlane.x >= tEnterPlane.z)
+                        {
+                            normal = float3(ray.direction.x < 0.0 ? 1.0 : -1.0, 0.0, 0.0);
+                        }
+                        else if (tEnterPlane.y >= tEnterPlane.z)
+                        {
+                            normal = float3(0.0, ray.direction.y < 0.0 ? 1.0 : -1.0, 0.0);
+                        }
+                        else
+                        {
+                            normal = float3(0.0, 0.0, ray.direction.z < 0.0 ? 1.0 : -1.0);
+                        }
+
+                        RayHit hit;
+                        hit.hit           = true;
+                        hit.t             = tMin * dimF;
+                        hit.positionLocal = ray.at(hit.t);
+                        hit.normalLocal   = normal;
+                        hit.depth         = depth;
+                        hit.steps         = steps;
+                        hit.value         = matId;
+                        return hit;
+                    }
                 }
                 else
                 {
-                    normal = float3(0.0, 0.0, ray.direction.z < 0.0 ? 1.0 : -1.0);
-                }
+                    stackParent[scale] = parent;
+                    stackTMax[scale]   = tMax;
 
-                RayHit hit;
-                hit.hit           = true;
-                hit.t             = tEnter;
-                hit.positionLocal = ray.at(tEnter);
-                hit.normalLocal   = normal;
-                hit.depth         = depth;
-                hit.steps         = steps;
-                hit.value         = node.value;
-                return hit;
-            }
-            continue;
-        }
+                    parent     = childIdx;
+                    parentNode = childNode;
 
-        uint halfSize = nodeSize >> 1u;
+                    float  halfScale = scaleExp2 * 0.5;
+                    float3 tCenter   = halfScale * tCoef + tCorner;
 
-        uint   candChild[4];
-        uint3  candMin[4];
-        float2 candRange[4];
-        int    candCount = 0;
+                    idx = 0u;
+                    scale--;
+                    scaleExp2 = halfScale;
 
-        [unroll]
-        for (uint c = 0u; c < 8u; c++)
-        {
-            uint3 cMin = nodeMin + uint3((c & 1u) != 0u ? halfSize : 0u, (c & 2u) != 0u ? halfSize : 0u, (c & 4u) != 0u ? halfSize : 0u);
-            uint3 cMax = cMin + uint3(halfSize);
+                    if (tCenter.x > tMin)
+                    {
+                        idx ^= 1u;
+                        pos.x += scaleExp2;
+                    }
+                    if (tCenter.y > tMin)
+                    {
+                        idx ^= 2u;
+                        pos.y += scaleExp2;
+                    }
+                    if (tCenter.z > tMin)
+                    {
+                        idx ^= 4u;
+                        pos.z += scaleExp2;
+                    }
 
-            float3 t0    = (float3(cMin) - ray.origin) * ray.invDirection;
-            float3 t1    = (float3(cMax) - ray.origin) * ray.invDirection;
-            float3 tLow  = min(t0, t1);
-            float3 tHigh = max(t0, t1);
-
-            float cEnter = max(max(tLow.x, tLow.y), max(tLow.z, tEnter));
-            float cExit  = min(min(tHigh.x, tHigh.y), min(tHigh.z, tExit));
-
-            if (cExit > cEnter && candCount < 4)
-            {
-                candChild[candCount] = node.childPointer + c;
-                candMin[candCount]   = cMin;
-                candRange[candCount] = float2(cEnter, cExit);
-                candCount++;
-            }
-        }
-
-        for (int i = 0; i < candCount - 1; i++)
-        {
-            for (int j = i + 1; j < candCount; j++)
-            {
-                if (candRange[i].x < candRange[j].x)
-                {
-                    uint   tmpChild = candChild[i];
-                    uint3  tmpMin   = candMin[i];
-                    float2 tmpRange = candRange[i];
-
-                    candChild[i] = candChild[j];
-                    candMin[i]   = candMin[j];
-                    candRange[i] = candRange[j];
-
-                    candChild[j] = tmpChild;
-                    candMin[j]   = tmpMin;
-                    candRange[j] = tmpRange;
+                    tMax = tvMax;
+                    continue;
                 }
             }
         }
 
-        for (int i = 0; i < candCount; i++)
+        uint stepMask = 0u;
+        if (tCorner.x <= tcMax)
         {
-            if (sp < 48)
+            stepMask ^= 1u;
+            pos.x -= scaleExp2;
+        }
+        if (tCorner.y <= tcMax)
+        {
+            stepMask ^= 2u;
+            pos.y -= scaleExp2;
+        }
+        if (tCorner.z <= tcMax)
+        {
+            stepMask ^= 4u;
+            pos.z -= scaleExp2;
+        }
+
+        tMin = tcMax;
+        idx ^= stepMask;
+
+        if ((idx & stepMask) != 0u)
+        {
+            uint differingBits = 0u;
+            if ((stepMask & 1u) != 0u)
             {
-                stackNodeDepth[sp] = uint2(candChild[i], depth + 1u);
-                stackMinSize[sp]   = uint4(candMin[i], halfSize);
-                stackRange[sp]     = candRange[i];
-                sp++;
+                differingBits |= asuint(pos.x) ^ asuint(pos.x + scaleExp2);
             }
+            if ((stepMask & 2u) != 0u)
+            {
+                differingBits |= asuint(pos.y) ^ asuint(pos.y + scaleExp2);
+            }
+            if ((stepMask & 4u) != 0u)
+            {
+                differingBits |= asuint(pos.z) ^ asuint(pos.z + scaleExp2);
+            }
+
+            scale     = int(firstbithigh(differingBits));
+            scaleExp2 = asfloat((scale - sMax + 127) << 23);
+
+            if (scale >= sMax)
+            {
+                break;
+            }
+
+            parent     = stackParent[scale];
+            tMax       = stackTMax[scale];
+            parentNode = storage.getNode(parent);
+
+            uint shx = asuint(pos.x) >> uint(scale);
+            uint shy = asuint(pos.y) >> uint(scale);
+            uint shz = asuint(pos.z) >> uint(scale);
+            pos.x    = asfloat(shx << uint(scale));
+            pos.y    = asfloat(shy << uint(scale));
+            pos.z    = asfloat(shz << uint(scale));
+            idx      = (shx & 1u) | ((shy & 1u) << 1u) | ((shz & 1u) << 2u);
         }
     }
 
