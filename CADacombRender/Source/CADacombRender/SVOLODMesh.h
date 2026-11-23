@@ -5,6 +5,8 @@
 #include "CADacomb/Volume/SVO/SVO.h"
 #include "CADacomb/Volume/SVO/SVODualTraversal.h"
 #include "CADacomb/Volume/SVOMesher/SVOCPUMesher.h"
+#include "CADacombRender/SVOLOD/SVOCompletedMesh.h"
+#include "CADacombRender/SVOLOD/SVOMeshJob.h"
 #include "CADacombRender/SVOLODChunk.h"
 #include "CADacombRender/SceneDataConverter.h"
 #include "CADacombRender/VulcantFragmentationBuffer.h"
@@ -61,27 +63,6 @@ namespace CADacomb::Render
         void setAmbientOcclusionEnabled(bool enabled);
 
       private:
-        struct MeshJob
-        {
-            size_t             chunkIndex = 0;
-            uint64_t           generation = 0;
-            glm::ivec3         minBound{ 0 };
-            uint32_t           size     = 32;
-            int                lodLevel = 0;
-            std::array<int, 6> neighborLODs{ 0, 0, 0, 0, 0, 0 };
-            glm::vec3          color{ 0.8f, 0.8f, 0.8f };
-            bool               computeAO = false;
-            double             distSq    = 0.0;
-        };
-
-        struct CompletedMesh
-        {
-            size_t                                    chunkIndex = 0;
-            uint64_t                                  generation = 0;
-            int                                       lodLevel   = 0;
-            std::vector<Vulcant::Toolkit::MeshVertex> vertices;
-        };
-
         static int log2Uint(uint32_t value);
         int        getMinLocalLOD(uint32_t nodeSize) const;
         int        getMaxLocalLOD(uint32_t nodeSize) const;
@@ -92,9 +73,9 @@ namespace CADacomb::Render
         void       workerLoop();
         void       markNodeDirty(size_t nodeIndex);
         void       ensureChildrenAllocated(size_t parentIndex);
-        void       beginSubdivideNode(size_t nodeIndex, const glm::dvec3& camPos, std::vector<MeshJob>& outJobs);
+        void       beginSubdivideNode(size_t nodeIndex, const glm::dvec3& camPos, std::vector<SVOMeshJob>& outJobs);
         void       tryCommitSplit(size_t parentIndex);
-        void       beginCollapseChildren(size_t parentIndex, const glm::dvec3& camPos, std::vector<MeshJob>& outJobs);
+        void       beginCollapseChildren(size_t parentIndex, const glm::dvec3& camPos, std::vector<SVOMeshJob>& outJobs);
         void       tryCommitCollapse(size_t parentIndex, const std::vector<Vulcant::Toolkit::MeshVertex>& parentVerts, int parentLod);
         void       collectIntersectingLeaves(size_t nodeIndex, const glm::ivec3& boxMin, const glm::ivec3& boxMax, std::vector<size_t>& outLeaves) const;
         void       getNeighborLODs(size_t nodeIndex, std::array<int, 6>& outNeighborLODs) const;
@@ -108,7 +89,7 @@ namespace CADacomb::Render
         bool       canFitReplacement(size_t freedVertices, size_t newVertices) const;
         bool       uploadVertices(size_t chunkIndex, const std::vector<Vulcant::Toolkit::MeshVertex>& vertices);
         void       releaseChunkPackage(size_t chunkIndex);
-        MeshJob    createJobForNode(size_t nodeIndex, int targetLod, const glm::dvec3& camPos) const;
+        SVOMeshJob createJobForNode(size_t nodeIndex, int targetLod, const glm::dvec3& camPos) const;
 
         CADacomb::Render::VulcantFragmentationBuffer<Vulcant::Toolkit::MeshVertex> buffer;
         const CADacomb::SVO<T>&                                                    svo;
@@ -138,13 +119,13 @@ namespace CADacomb::Render
         bool                                                                       gpuBufferDirty          = false;
         std::unique_ptr<Vulcant::VulcantBuffer>                                    indirectBuffer;
 
-        std::mutex                jobMutex;
-        std::condition_variable   jobCv;
-        std::vector<MeshJob>      pendingJobs;
-        std::mutex                completedMutex;
-        std::deque<CompletedMesh> completedMeshes;
-        std::vector<std::thread>  workers;
-        bool                      stopWorkers = false;
+        std::mutex                   jobMutex;
+        std::condition_variable      jobCv;
+        std::vector<SVOMeshJob>      pendingJobs;
+        std::mutex                   completedMutex;
+        std::deque<SVOCompletedMesh> completedMeshes;
+        std::vector<std::thread>     workers;
+        bool                         stopWorkers = false;
     };
 
     template<typename T>
@@ -307,7 +288,7 @@ namespace CADacomb::Render
 
         while (true)
         {
-            MeshJob job;
+            SVOMeshJob job;
             {
                 std::unique_lock<std::mutex> lock(jobMutex);
                 jobCv.wait(lock, [&]() { return stopWorkers || !pendingJobs.empty(); });
@@ -335,7 +316,7 @@ namespace CADacomb::Render
             uint32_t coordShift = 0;
             CADacomb::SVOCPUMesher::meshChunkWithBoundaries(svo, job.minBound, job.size, job.lodLevel, job.neighborLODs, localQuads, coordShift);
 
-            CompletedMesh completed;
+            SVOCompletedMesh completed;
             completed.chunkIndex = job.chunkIndex;
             completed.generation = job.generation;
             completed.lodLevel   = job.lodLevel;
@@ -429,9 +410,9 @@ namespace CADacomb::Render
     }
 
     template<typename T>
-    typename SVOLODMesh<T>::MeshJob SVOLODMesh<T>::createJobForNode(size_t nodeIndex, int targetLod, const glm::dvec3& camPos) const
+    SVOMeshJob SVOLODMesh<T>::createJobForNode(size_t nodeIndex, int targetLod, const glm::dvec3& camPos) const
     {
-        MeshJob job;
+        SVOMeshJob job;
         job.chunkIndex = nodeIndex;
         job.generation = nodeGeneration[nodeIndex];
         job.minBound   = chunks[nodeIndex].getMinBound();
@@ -490,7 +471,7 @@ namespace CADacomb::Render
     }
 
     template<typename T>
-    void SVOLODMesh<T>::beginSubdivideNode(size_t nodeIndex, const glm::dvec3& camPos, std::vector<MeshJob>& outJobs)
+    void SVOLODMesh<T>::beginSubdivideNode(size_t nodeIndex, const glm::dvec3& camPos, std::vector<SVOMeshJob>& outJobs)
     {
         ensureChildrenAllocated(nodeIndex);
 
@@ -574,7 +555,7 @@ namespace CADacomb::Render
     }
 
     template<typename T>
-    void SVOLODMesh<T>::beginCollapseChildren(size_t parentIndex, const glm::dvec3& camPos, std::vector<MeshJob>& outJobs)
+    void SVOLODMesh<T>::beginCollapseChildren(size_t parentIndex, const glm::dvec3& camPos, std::vector<SVOMeshJob>& outJobs)
     {
         if (nodeCollapsing[parentIndex])
         {
@@ -902,7 +883,7 @@ namespace CADacomb::Render
                     }
                 }
 
-                CompletedMesh completed;
+                SVOCompletedMesh completed;
                 {
                     std::lock_guard<std::mutex> lock(completedMutex);
                     if (completedMeshes.empty())
@@ -978,7 +959,7 @@ namespace CADacomb::Render
                       return glm::dot(da, da) < glm::dot(db, db);
                   });
 
-        std::vector<MeshJob> newJobs;
+        std::vector<SVOMeshJob> newJobs;
         std::vector<size_t>  coarsenCandidates;
         std::vector<size_t>  refineCandidates;
 
