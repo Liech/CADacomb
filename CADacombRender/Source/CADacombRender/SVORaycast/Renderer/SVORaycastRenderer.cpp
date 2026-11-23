@@ -1,9 +1,11 @@
 #include "CADacombRender/SVORaycast/Renderer/SVORaycastRenderer.h"
 
 #include "CADacombRender/SVORaycast/Storage/GPUSVONode.h"
+#include "SVORaycast/Beam/SVORaycast_Beam_comp.h"
 #include "SVORaycast/Renderer/SVORaycast_Default_frag.h"
 #include "SVORaycast/Renderer/SVORaycast_vert.h"
 #include "Vulcant/Interface/VulcantBuffer.h"
+#include "Vulcant/Interface/VulcantComputeCommand.h"
 #include "Vulcant/Interface/VulcantCullMode.h"
 #include "Vulcant/Interface/VulcantDevice.h"
 #include "Vulcant/Interface/VulcantGraphicCommand.h"
@@ -28,18 +30,26 @@ namespace CADacomb::Render
 
     SVORaycastRenderer::~SVORaycastRenderer()
     {
+        if (beamCmd)
+        {
+            beamCmd->wait();
+            beamCmd.reset();
+        }
         if (drawCmd)
         {
             drawCmd->wait();
             drawCmd.reset();
         }
+        beamDescriptorSet.reset();
         descriptorSet.reset();
         pipeline.reset();
+        beamBuffer.reset();
         svoNodeBuffer.reset();
         raycastParamsUbo.reset();
         sceneDataUbo.reset();
         indirectBuffer.reset();
         proxyVertexBuffer.reset();
+        beamShader.reset();
         fragShader.reset();
         vertShader.reset();
     }
@@ -78,8 +88,11 @@ namespace CADacomb::Render
 
         auto vertSpirv = std::vector<uint32_t>(SVORaycast_vert_spirv, SVORaycast_vert_spirv + SVORaycast_vert_spirv_sizeInBytes / sizeof(uint32_t));
         auto fragSpirv = std::vector<uint32_t>(SVORaycast_Default_frag_spirv, SVORaycast_Default_frag_spirv + SVORaycast_Default_frag_spirv_sizeInBytes / sizeof(uint32_t));
+        auto beamSpirv = std::vector<uint32_t>(SVORaycast_Beam_comp_spirv, SVORaycast_Beam_comp_spirv + SVORaycast_Beam_comp_spirv_sizeInBytes / sizeof(uint32_t));
         vertShader     = device.createShader(vertSpirv);
         fragShader     = device.createShader(fragSpirv);
+        beamShader     = device.createShader(beamSpirv);
+        beamCmd        = device.createComputeCommand();
         drawCmd        = device.createGraphicCommand();
     }
 
@@ -93,10 +106,12 @@ namespace CADacomb::Render
         if (nodeCount == 0)
         {
             svoNodeBuffer.reset();
+            beamDescriptorSet.reset();
             descriptorSet.reset();
             return;
         }
 
+        beamCmd->wait();
         drawCmd->wait();
         svoNodeBuffer = device.createBuffer(nodeCount, sizeof(GPUSVONode), false);
 
@@ -139,11 +154,13 @@ namespace CADacomb::Render
             offset += count;
         }
 
+        beamDescriptorSet.reset();
         descriptorSet.reset();
     }
 
     void SVORaycastRenderer::invalidatePipeline()
     {
+        beamDescriptorSet.reset();
         descriptorSet.reset();
         pipeline.reset();
     }
@@ -162,10 +179,17 @@ namespace CADacomb::Render
             pipeline = device.createVulcanGraphicPipeline(shaders, colorAttachments, &depthTarget, nullptr, rasterConfig);
         }
 
+        if (!beamDescriptorSet)
+        {
+            std::vector<std::vector<std::shared_ptr<Vulcant::VulcantResource>>> sets;
+            sets.push_back({ sceneDataUbo->asResource(), raycastParamsUbo->asResource(), svoNodeBuffer->asResource(), beamBuffer->asResource() });
+            beamDescriptorSet = device.createSet(sets, *beamShader);
+        }
+
         if (!descriptorSet)
         {
             std::vector<std::vector<std::shared_ptr<Vulcant::VulcantResource>>> sets;
-            sets.push_back({ sceneDataUbo->asResource(), raycastParamsUbo->asResource(), svoNodeBuffer->asResource() });
+            sets.push_back({ sceneDataUbo->asResource(), raycastParamsUbo->asResource(), svoNodeBuffer->asResource(), beamBuffer->asResource() });
             descriptorSet = device.createSet(sets, *fragShader);
         }
     }
@@ -191,11 +215,16 @@ namespace CADacomb::Render
             return;
         }
 
-        if (targetRes != lastResolution)
+        if (targetRes != lastResolution || &colorTarget != lastColorTarget)
         {
-            lastResolution = targetRes;
+            lastResolution  = targetRes;
+            lastColorTarget = &colorTarget;
+            beamWidth       = (static_cast<uint32_t>(targetRes.x) + beamTileSize - 1u) / beamTileSize + 1u;
+            beamHeight      = (static_cast<uint32_t>(targetRes.y) + beamTileSize - 1u) / beamTileSize + 1u;
             invalidatePipeline();
-            drawCmd = device.createGraphicCommand();
+            beamBuffer = device.createBuffer(static_cast<size_t>(beamWidth) * static_cast<size_t>(beamHeight), sizeof(float), true);
+            beamCmd    = device.createComputeCommand();
+            drawCmd    = device.createGraphicCommand();
         }
 
         ensurePipeline(colorTarget, normalTarget, depthTarget);
@@ -210,7 +239,19 @@ namespace CADacomb::Render
         raycastParams.maxSteps      = 512u;
         raycastParams.maxDepth      = maxDepth;
         raycastParams.pixelLodScale = std::max(0.25f, pixelLodScale);
+        raycastParams.beamWidth     = beamWidth;
+        raycastParams.beamHeight    = beamHeight;
+        raycastParams.beamTileSize  = beamTileSize;
+        raycastParams.beamEnabled   = 1u;
         raycastParamsUbo->uploadToGPU(&raycastParams, 1);
+
+        glm::ivec3 beamGroups(static_cast<int>((beamWidth + 7u) / 8u), static_cast<int>((beamHeight + 7u) / 8u), 1);
+        beamCmd->wait();
+        beamCmd->startRecord();
+        beamCmd->add(beamGroups, *beamDescriptorSet, *beamShader);
+        beamCmd->addBarrier(*beamBuffer);
+        beamCmd->endRecord();
+        beamCmd->runSync();
 
         drawCmd->wait();
         drawCmd->startRecord();

@@ -65,6 +65,14 @@ set(SVORaycast_Pipeline_Files
 )
 source_group("SVORaycast/Pipeline" FILES ${SVORaycast_Pipeline_Files})
 
+set(SVORaycast_Beam_Files
+    "Source/CADacombRender/SVORaycast/Beam/IBeamAccelerator.slang"
+    "Source/CADacombRender/SVORaycast/Beam/NullBeamAccelerator.slang"
+    "Source/CADacombRender/SVORaycast/Beam/CoarseBeamAccelerator.slang"
+    "Source/CADacombRender/SVORaycast/Beam/SVORaycast_Beam_comp.exe.slang"
+)
+source_group("SVORaycast/Beam" FILES ${SVORaycast_Beam_Files})
+
 set(SVORaycast_Renderer_Files
     "Source/CADacombRender/SVORaycast/Renderer/SVORaycastRenderer.h"
     "Source/CADacombRender/SVORaycast/Renderer/SVORaycastRenderer.cpp"
@@ -81,6 +89,7 @@ set(SVORaycast_All_Files
     ${SVORaycast_Shading_Files}
     ${SVORaycast_Traversal_Files}
     ${SVORaycast_Pipeline_Files}
+    ${SVORaycast_Beam_Files}
     ${SVORaycast_Renderer_Files}
 )
 

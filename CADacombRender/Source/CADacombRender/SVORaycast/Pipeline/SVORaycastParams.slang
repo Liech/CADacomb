@@ -13,4 +13,8 @@ public struct SVORaycastParams
     public uint     maxSteps;
     public uint     maxDepth;
     public float    pixelLodScale;
+    public uint     beamWidth;
+    public uint     beamHeight;
+    public uint     beamTileSize;
+    public uint     beamEnabled;
 };

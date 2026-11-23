@@ -1,5 +1,6 @@
 module SVORaycastPipeline;
 
+import SVORaycast.Beam.IBeamAccelerator;
 import SVORaycast.Core.RayHit;
 import SVORaycast.LOD.ILODPolicy;
 import SVORaycast.Pipeline.ProxyVertexInput;
@@ -18,6 +19,7 @@ import SVORaycast.Traversal.SVODDATraversal;
 [[vk::binding(0, 0)]] public ConstantBuffer<SceneUniform>     scene;
 [[vk::binding(1, 0)]] public ConstantBuffer<SVORaycastParams> raycastParams;
 [[vk::binding(2, 0)]] public StructuredBuffer<GPUSVONode>     svoNodes;
+[[vk::binding(3, 0)]] public StructuredBuffer<float>          beamDepths;
 
 public ProxyVertexOutput buildProxyVertex(ProxyVertexInput input)
 {
@@ -29,12 +31,13 @@ public ProxyVertexOutput buildProxyVertex(ProxyVertexInput input)
     return output;
 }
 
-public RaycastFragmentOutput executeRaycastFragment<TStorage : ISVOStorage, TProxy : IRayProxy, TLOD : ILODPolicy, TShading : ISVOShading>(
+public RaycastFragmentOutput executeRaycastFragment<TStorage : ISVOStorage, TProxy : IRayProxy, TLOD : ILODPolicy, TShading : ISVOShading, TBeam : IBeamAccelerator>(
     ProxyVertexOutput input,
     TStorage          storage,
     TProxy            proxy,
     TLOD              lodPolicy,
-    TShading          shading)
+    TShading          shading,
+    TBeam             beamAccelerator)
 {
     float2 ndc = (input.position.xy / max(scene.resolution, float2(1.0))) * 2.0 - 1.0;
 
@@ -52,6 +55,13 @@ public RaycastFragmentOutput executeRaycastFragment<TStorage : ISVOStorage, TPro
     {
         discard;
     }
+
+    float beamStartT = beamAccelerator.queryStartT(input.position.xy, raySetup.voxelRay.tMin);
+    if (beamAccelerator.isTileEmpty(beamStartT))
+    {
+        discard;
+    }
+    raySetup.voxelRay.tMin = max(raySetup.voxelRay.tMin, beamStartT);
 
     RayHit hit = traverseSVO(raySetup.voxelRay, storage, lodPolicy, raycastParams.maxSteps);
     if (!hit.hit)

@@ -1,3 +1,4 @@
+import SVORaycast.Beam.CoarseBeamAccelerator;
 import SVORaycast.LOD.PixelFootprintLODPolicy;
 import SVORaycast.Pipeline.ProxyVertexOutput;
 import SVORaycast.Pipeline.RaycastFragmentOutput;
@@ -28,7 +29,14 @@ RaycastFragmentOutput main(ProxyVertexOutput input)
     lodPolicy.pixelConeSlope = raycastParams.pixelLodScale / max(projFactor, 1.0);
     lodPolicy.maxDepth       = raycastParams.maxDepth;
 
+    CoarseBeamAccelerator beamAccelerator;
+    beamAccelerator.beamWidth    = raycastParams.beamWidth;
+    beamAccelerator.beamHeight   = raycastParams.beamHeight;
+    beamAccelerator.beamTileSize = raycastParams.beamTileSize;
+    beamAccelerator.beamEnabled  = raycastParams.beamEnabled;
+    beamAccelerator.beamDepths   = beamDepths;
+
     DirectionalSVOShading shading;
 
-    return executeRaycastFragment(input, storage, proxy, lodPolicy, shading);
+    return executeRaycastFragment(input, storage, proxy, lodPolicy, shading, beamAccelerator);
 }

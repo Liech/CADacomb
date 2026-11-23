@@ -12,6 +12,7 @@
 namespace Vulcant
 {
     class VulcantBuffer;
+    class VulcantComputeCommand;
     class VulcantDevice;
     class VulcantGraphicCommand;
     class VulcantGraphicPipeline;
@@ -22,7 +23,7 @@ namespace Vulcant
 
 namespace CADacomb::Render
 {
-    // Standalone GPU SVO raycast renderer using modular Slang shaders and proxy volume rasterization.
+    // Standalone GPU SVO raycast renderer using modular Slang shaders, coarse beam prepass, and proxy volume rasterization.
     class SVORaycastRenderer
     {
       public:
@@ -52,16 +53,24 @@ namespace CADacomb::Render
         Vulcant::VulcantDevice&                          device;
         std::unique_ptr<Vulcant::VulcantShader>          vertShader;
         std::unique_ptr<Vulcant::VulcantShader>          fragShader;
+        std::unique_ptr<Vulcant::VulcantShader>          beamShader;
         std::unique_ptr<Vulcant::VulcantGraphicPipeline> pipeline;
         std::unique_ptr<Vulcant::VulcantSet>             descriptorSet;
+        std::unique_ptr<Vulcant::VulcantSet>             beamDescriptorSet;
         std::unique_ptr<Vulcant::VulcantBuffer>          proxyVertexBuffer;
         std::unique_ptr<Vulcant::VulcantBuffer>          indirectBuffer;
         std::unique_ptr<Vulcant::VulcantBuffer>          sceneDataUbo;
         std::unique_ptr<Vulcant::VulcantBuffer>          raycastParamsUbo;
         std::unique_ptr<Vulcant::VulcantBuffer>          svoNodeBuffer;
+        std::unique_ptr<Vulcant::VulcantBuffer>          beamBuffer;
+        std::unique_ptr<Vulcant::VulcantComputeCommand>  beamCmd;
         std::unique_ptr<Vulcant::VulcantGraphicCommand>  drawCmd;
         SVORaycastParams                                 raycastParams;
+        const Vulcant::VulcantImage*                     lastColorTarget = nullptr;
         glm::ivec2                                       lastResolution{ 0, 0 };
+        uint32_t                                         beamWidth         = 0;
+        uint32_t                                         beamHeight        = 0;
+        uint32_t                                         beamTileSize      = 8;
         size_t                                           uploadedNodeCount = 0;
         uint32_t                                         uploadedDimension = 0;
     };
