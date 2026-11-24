@@ -191,9 +191,16 @@ set(SVOLOD_Files
 )
 source_group("SVOLOD" FILES ${SVOLOD_Files})
 
+set(Texture_Files
+    "Source/CADacombRender/Texture/TextureImageConverter.h"
+    "Source/CADacombRender/Texture/TextureImageConverter.cpp"
+)
+source_group("Texture" FILES ${Texture_Files})
+
 set(ALL_FILES
     ${Source_Files}
     ${SVOLOD_Files}
+    ${Texture_Files}
     ${SVORaycast_All_Files}
     ${GENERATED_SHADER_HEADERS}
 )
@@ -235,6 +242,7 @@ if(CADACOMB_BUILD_TESTS)
         "Source/CADacombRender/testMain.cpp"
         ${Source_Files}
         ${SVOLOD_Files}
+        ${Texture_Files}
         ${SVORaycast_All_Files}
         ${GENERATED_SHADER_HEADERS}
     )
