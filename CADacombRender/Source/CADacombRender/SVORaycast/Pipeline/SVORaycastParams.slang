@@ -17,4 +17,8 @@ public struct SVORaycastParams
     public uint     beamHeight;
     public uint     beamTileSize;
     public uint     beamEnabled;
+    public int      cameraTetIndex;
+    public int      padding0;
+    public int      padding1;
+    public int      padding2;
 };

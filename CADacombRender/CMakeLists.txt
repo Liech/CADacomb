@@ -73,6 +73,30 @@ set(SVORaycast_Beam_Files
 )
 source_group("SVORaycast/Beam" FILES ${SVORaycast_Beam_Files})
 
+set(SVORaycast_TetraProxy_Files
+    "Source/CADacombRender/SVORaycast/TetraProxy/GPUTetraVertex.h"
+    "Source/CADacombRender/SVORaycast/TetraProxy/GPUTetraVertex.cpp"
+    "Source/CADacombRender/SVORaycast/TetraProxy/GPUTetraVertex.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/GPUTetrahedron.h"
+    "Source/CADacombRender/SVORaycast/TetraProxy/GPUTetrahedron.cpp"
+    "Source/CADacombRender/SVORaycast/TetraProxy/GPUTetrahedron.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraSurfaceVertex.h"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraSurfaceVertex.cpp"
+    "Source/CADacombRender/SVORaycast/TetraProxy/SVOTetraCageBuilder.h"
+    "Source/CADacombRender/SVORaycast/TetraProxy/SVOTetraCageBuilder.cpp"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraSineDeformer.h"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraSineDeformer.cpp"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraProxyVertexInput.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraProxyVertexOutput.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetraRaycastResult.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/TetrahedronProxy.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/SVORaycast_Tetra_vert.exe.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/SVORaycast_Tetra_frag.exe.slang"
+    "Source/CADacombRender/SVORaycast/TetraProxy/SVOTetraRaycastRenderer.h"
+    "Source/CADacombRender/SVORaycast/TetraProxy/SVOTetraRaycastRenderer.cpp"
+)
+source_group("SVORaycast/TetraProxy" FILES ${SVORaycast_TetraProxy_Files})
+
 set(SVORaycast_Renderer_Files
     "Source/CADacombRender/SVORaycast/Renderer/SVORaycastRenderer.h"
     "Source/CADacombRender/SVORaycast/Renderer/SVORaycastRenderer.cpp"
@@ -90,6 +114,7 @@ set(SVORaycast_All_Files
     ${SVORaycast_Traversal_Files}
     ${SVORaycast_Pipeline_Files}
     ${SVORaycast_Beam_Files}
+    ${SVORaycast_TetraProxy_Files}
     ${SVORaycast_Renderer_Files}
 )
 

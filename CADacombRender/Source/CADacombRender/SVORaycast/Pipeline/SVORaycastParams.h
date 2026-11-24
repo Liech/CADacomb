@@ -23,9 +23,13 @@ namespace CADacomb::Render
         uint32_t  maxSteps      = 512;
         uint32_t  maxDepth      = 0;
         float     pixelLodScale = 1.0f;
-        uint32_t  beamWidth     = 0;
-        uint32_t  beamHeight    = 0;
-        uint32_t  beamTileSize  = 8;
-        uint32_t  beamEnabled   = 1;
+        uint32_t  beamWidth      = 0;
+        uint32_t  beamHeight     = 0;
+        uint32_t  beamTileSize   = 8;
+        uint32_t  beamEnabled    = 1;
+        int32_t   cameraTetIndex = -1;
+        int32_t   padding0       = 0;
+        int32_t   padding1       = 0;
+        int32_t   padding2       = 0;
     };
 }
