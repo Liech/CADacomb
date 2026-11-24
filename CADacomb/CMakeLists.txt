@@ -8,6 +8,43 @@ find_package(smlib CONFIG REQUIRED)
 find_package(Jolt CONFIG REQUIRED)
 find_package(OpenMP)
 
+set(Animation_Files
+    "Source/CADacomb/Animation/Transform.h"
+    "Source/CADacomb/Animation/Transform.cpp"
+)
+source_group("Source/Animation" FILES ${Animation_Files})
+
+set(Animation_Skeleton_Files
+    "Source/CADacomb/Animation/Skeleton/Joint.h"
+    "Source/CADacomb/Animation/Skeleton/Joint.cpp"
+    "Source/CADacomb/Animation/Skeleton/Skeleton.h"
+    "Source/CADacomb/Animation/Skeleton/Skeleton.cpp"
+    "Source/CADacomb/Animation/Skeleton/SkeletonPose.h"
+    "Source/CADacomb/Animation/Skeleton/SkeletonPose.cpp"
+)
+source_group("Source/Animation/Skeleton" FILES ${Animation_Skeleton_Files})
+
+set(Animation_KeyframeAnimation_Files
+    "Source/CADacomb/Animation/KeyframeAnimation/AnimationClip.h"
+    "Source/CADacomb/Animation/KeyframeAnimation/AnimationClip.cpp"
+    "Source/CADacomb/Animation/KeyframeAnimation/InterpolationMode.h"
+)
+source_group("Source/Animation/KeyframeAnimation" FILES ${Animation_KeyframeAnimation_Files})
+
+set(Animation_KeyframeAnimation_Track_Files
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/JointTrack.h"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/JointTrack.cpp"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/QuatKeyframe.h"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/QuatKeyframe.cpp"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/QuatTrack.h"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/QuatTrack.cpp"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/Vec3Keyframe.h"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/Vec3Keyframe.cpp"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/Vec3Track.h"
+    "Source/CADacomb/Animation/KeyframeAnimation/Track/Vec3Track.cpp"
+)
+source_group("Source/Animation/KeyframeAnimation/Track" FILES ${Animation_KeyframeAnimation_Track_Files})
+
 set(Physics_Files
     "Source/CADacomb/Physics/README.md"
     "Source/CADacomb/Physics/SoftBodyMode.h"
@@ -389,6 +426,10 @@ set(Volume_LODStrategy_Files
 source_group("Source/Volume/LODStrategy" FILES ${Volume_LODStrategy_Files})
 
 set(ALL_FILES
+    ${Animation_Files}
+    ${Animation_Skeleton_Files}
+    ${Animation_KeyframeAnimation_Files}
+    ${Animation_KeyframeAnimation_Track_Files}
     ${Physics_Files}
     ${Physics_Interface_Files}
     ${Physics_Jolt_Files}
