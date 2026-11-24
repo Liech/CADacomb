@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20...3.30)
 project(CADacomb)
 
 find_package(glm REQUIRED)
+find_package(lodepng CONFIG REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(smlib CONFIG REQUIRED)
 find_package(Jolt CONFIG REQUIRED)
@@ -44,6 +45,29 @@ set(Animation_KeyframeAnimation_Track_Files
     "Source/CADacomb/Animation/KeyframeAnimation/Track/Vec3Track.cpp"
 )
 source_group("Source/Animation/KeyframeAnimation/Track" FILES ${Animation_KeyframeAnimation_Track_Files})
+
+set(Animation_Skinning_Files
+    "Source/CADacomb/Animation/Skinning/TriangulationSkinning.h"
+    "Source/CADacomb/Animation/Skinning/TriangulationSkinning.cpp"
+    "Source/CADacomb/Animation/Skinning/VertexSkinWeights.h"
+    "Source/CADacomb/Animation/Skinning/VertexSkinWeights.cpp"
+)
+source_group("Source/Animation/Skinning" FILES ${Animation_Skinning_Files})
+
+set(Texture_Files
+    "Source/CADacomb/Texture/Texture.h"
+    "Source/CADacomb/Texture/Texture.cpp"
+    "Source/CADacomb/Texture/TextureColorSpace.h"
+    "Source/CADacomb/Texture/TextureFilterMode.h"
+    "Source/CADacomb/Texture/TextureWrapMode.h"
+)
+source_group("Source/Texture" FILES ${Texture_Files})
+
+set(Texture_Mapping_Files
+    "Source/CADacomb/Texture/Mapping/TriangulationUVs.h"
+    "Source/CADacomb/Texture/Mapping/TriangulationUVs.cpp"
+)
+source_group("Source/Texture/Mapping" FILES ${Texture_Mapping_Files})
 
 set(Physics_Files
     "Source/CADacomb/Physics/README.md"
@@ -430,6 +454,9 @@ set(ALL_FILES
     ${Animation_Skeleton_Files}
     ${Animation_KeyframeAnimation_Files}
     ${Animation_KeyframeAnimation_Track_Files}
+    ${Animation_Skinning_Files}
+    ${Texture_Files}
+    ${Texture_Mapping_Files}
     ${Physics_Files}
     ${Physics_Interface_Files}
     ${Physics_Jolt_Files}
@@ -461,6 +488,7 @@ set_property(TARGET CADacomb PROPERTY CXX_STANDARD 20)
 
 target_link_libraries(CADacomb PUBLIC 
     glm::glm
+    lodepng
     nlohmann_json::nlohmann_json
     smlib::sm_api
     smlib::smlib
@@ -500,6 +528,7 @@ if(CADACOMB_BUILD_TESTS)
     target_link_libraries(CADacombTest PUBLIC 
         Catch2::Catch2
         glm::glm
+        lodepng
         nlohmann_json::nlohmann_json
         smlib::sm_api
         smlib::smlib
