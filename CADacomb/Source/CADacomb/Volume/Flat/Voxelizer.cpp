@@ -9,11 +9,6 @@ namespace CADacomb
 
     Voxelizer::~Voxelizer() {}
 
-    bool Voxelizer::epsilonEqual(double a, double b, double epsilon) const
-    {
-        return std::abs(a - b) < epsilon;
-    }
-
     std::unique_ptr<BinaryVolume> Voxelizer::voxelize(const std::vector<glm::dvec3>& vertices,
                                                       const std::vector<size_t>&     indices,
                                                       const glm::dvec3&              start,
@@ -73,8 +68,7 @@ namespace CADacomb
                                            const glm::dvec3&                       end,
                                            const glm::u64vec3&                     resolution)
     {
-        glm::dvec3 span         = end - start;
-        glm::dvec3 rayDirection = glm::dvec3(0, 0, 1);
+        glm::dvec3 span = end - start;
 
 #pragma omp parallel for
         for (long long x = 0; x < static_cast<long long>(resolution.x); x++)
@@ -92,33 +86,24 @@ namespace CADacomb
                     continue;
                 }
 
-                double zMin = start.z;
-                for (const auto& tri : stack)
-                {
-                    zMin = std::min(zMin, vertices[indices[tri + 0]].z);
-                    zMin = std::min(zMin, vertices[indices[tri + 1]].z);
-                    zMin = std::min(zMin, vertices[indices[tri + 2]].z);
-                }
-
-                double     rx = (static_cast<double>(x) + 0.5) / static_cast<double>(resolution.x);
-                double     ry = (static_cast<double>(y) + 0.5) / static_cast<double>(resolution.y);
-                glm::dvec3 rayStart(start.x + span.x * rx, start.y + span.y * ry, zMin - 10.0);
+                double rx   = (static_cast<double>(x) + 0.5) / static_cast<double>(resolution.x);
+                double ry   = (static_cast<double>(y) + 0.5) / static_cast<double>(resolution.y);
+                double rayX = start.x + span.x * rx;
+                double rayY = start.y + span.y * ry;
 
                 intersections.clear();
                 for (auto& tri : stack)
                 {
-                    const glm::dvec3& a = vertices[indices[tri]];
-                    const glm::dvec3& b = vertices[indices[tri + 1]];
-                    const glm::dvec3& c = vertices[indices[tri + 2]];
-                    glm::dvec3        intersectionLocation;
-                    bool              doesIntersect = intersectRayTriangle(rayStart, rayDirection, a, b, c, intersectionLocation);
-                    if (doesIntersect)
+                    const glm::dvec3& a             = vertices[indices[tri]];
+                    const glm::dvec3& b             = vertices[indices[tri + 1]];
+                    const glm::dvec3& c             = vertices[indices[tri + 2]];
+                    double            intersectionZ = 0.0;
+                    if (intersectVerticalRayTriangle(rayX, rayY, a, b, c, intersectionZ))
                     {
-                        intersections.push_back(intersectionLocation.z);
+                        intersections.push_back(intersectionZ);
                     }
                 }
                 std::sort(intersections.begin(), intersections.end());
-                intersections.erase(std::unique(intersections.begin(), intersections.end(), [this](double a, double b) { return epsilonEqual(a, b, 1e-5); }), intersections.end());
 
                 for (auto& zIntersection : intersections)
                 {
@@ -205,46 +190,84 @@ namespace CADacomb
         end         = glm::dvec2(maxX, maxY);
     }
 
-    bool Voxelizer::intersectRayTriangle(const glm::dvec3& rayOrigin, const glm::dvec3& rayVector, const glm::dvec3& vertex0, const glm::dvec3& vertex1, const glm::dvec3& vertex2, glm::dvec3& out)
+    int Voxelizer::edgeSign(const glm::dvec3& a, const glm::dvec3& b, double px, double py, double& outCross) const
     {
-        const double epsilon = 1e-5;
-        glm::dvec3   edge1, edge2, h, s, q;
-        double       a, f, u, v;
-        edge1 = vertex1 - vertex0;
-        edge2 = vertex2 - vertex0;
-        h     = glm::cross(rayVector, edge2);
-        a     = glm::dot(edge1, h);
+        bool              swapped = false;
+        const glm::dvec3* lo      = &a;
+        const glm::dvec3* hi      = &b;
 
-        if (a > -epsilon && a < epsilon)
+        if (a.x > b.x || (a.x == b.x && a.y > b.y))
+        {
+            lo      = &b;
+            hi      = &a;
+            swapped = true;
+        }
+
+        double ax    = lo->x - px;
+        double ay    = lo->y - py;
+        double bx    = hi->x - px;
+        double by    = hi->y - py;
+        double cross = ax * by - ay * bx;
+
+        int sign = 0;
+        if (cross > 0.0)
+        {
+            sign = 1;
+        }
+        else if (cross < 0.0)
+        {
+            sign = -1;
+        }
+        else if (lo->y != hi->y)
+        {
+            sign = (lo->y > hi->y) ? 1 : -1;
+        }
+        else if (hi->x != lo->x)
+        {
+            sign = (hi->x > lo->x) ? 1 : -1;
+        }
+
+        if (swapped)
+        {
+            outCross = -cross;
+            return -sign;
+        }
+
+        outCross = cross;
+        return sign;
+    }
+
+    bool Voxelizer::intersectVerticalRayTriangle(double rayX, double rayY, const glm::dvec3& vertex0, const glm::dvec3& vertex1, const glm::dvec3& vertex2, double& outZ) const
+    {
+        double w2 = 0.0;
+        int    s0 = edgeSign(vertex0, vertex1, rayX, rayY, w2);
+        if (s0 == 0)
         {
             return false;
         }
 
-        f = 1.0 / a;
-        s = rayOrigin - vertex0;
-        u = f * glm::dot(s, h);
-
-        if (u < -epsilon || u > 1.0 + epsilon)
+        double w0 = 0.0;
+        int    s1 = edgeSign(vertex1, vertex2, rayX, rayY, w0);
+        if (s1 != s0)
         {
             return false;
         }
 
-        q = glm::cross(s, edge1);
-        v = f * glm::dot(rayVector, q);
-
-        if (v < -epsilon || u + v > 1.0 + epsilon)
+        double w1 = 0.0;
+        int    s2 = edgeSign(vertex2, vertex0, rayX, rayY, w1);
+        if (s2 != s0)
         {
             return false;
         }
 
-        double t = f * glm::dot(edge2, q);
-
-        if (t > epsilon)
+        double wSum = w0 + w1 + w2;
+        if (wSum == 0.0)
         {
-            out = rayOrigin + rayVector * t;
-            return true;
+            return false;
         }
-        return false;
+
+        outZ = (w0 * vertex0.z + w1 * vertex1.z + w2 * vertex2.z) / wSum;
+        return true;
     }
 }
 

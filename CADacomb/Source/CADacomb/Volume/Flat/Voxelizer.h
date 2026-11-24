@@ -36,7 +36,7 @@ namespace CADacomb
                                     const glm::u64vec3&                     resolution);
 
         void box(const glm::dvec3& a, const glm::dvec3& b, const glm::dvec3& c, glm::dvec2& start, glm::dvec2& end);
-        bool intersectRayTriangle(const glm::dvec3& rayStart, const glm::dvec3& rayDir, const glm::dvec3& A, const glm::dvec3& B, const glm::dvec3& C, glm::dvec3& out);
-        bool epsilonEqual(double a, double b, double epsilon) const;
+        int  edgeSign(const glm::dvec3& a, const glm::dvec3& b, double px, double py, double& outCross) const;
+        bool intersectVerticalRayTriangle(double rayX, double rayY, const glm::dvec3& vertex0, const glm::dvec3& vertex1, const glm::dvec3& vertex2, double& outZ) const;
     };
 }

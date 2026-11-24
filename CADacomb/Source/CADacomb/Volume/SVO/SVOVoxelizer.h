@@ -46,8 +46,8 @@ namespace CADacomb
                                          std::vector<std::vector<size_t>>& tileTriangleStack) const;
 
         void box(const glm::dvec3& a, const glm::dvec3& b, const glm::dvec3& c, glm::dvec2& start, glm::dvec2& end) const;
-        bool intersectRayTriangle(const glm::dvec3& rayOrigin, const glm::dvec3& rayVector, const glm::dvec3& vertex0, const glm::dvec3& vertex1, const glm::dvec3& vertex2, glm::dvec3& out) const;
-        bool epsilonEqual(double a, double b) const;
+        int  edgeSign(const glm::dvec3& a, const glm::dvec3& b, double px, double py, double& outCross) const;
+        bool intersectVerticalRayTriangle(double rayX, double rayY, const glm::dvec3& vertex0, const glm::dvec3& vertex1, const glm::dvec3& vertex2, double& outZ) const;
     };
 
     template<typename T>
