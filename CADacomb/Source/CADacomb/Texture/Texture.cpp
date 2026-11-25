@@ -1,6 +1,11 @@
 #include "CADacomb/Texture/Texture.h"
 
-#include <lodepng.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include <stdexcept>
 
 namespace CADacomb::Texture
@@ -156,48 +161,75 @@ namespace CADacomb::Texture
 
     void Texture::saveToPngFile(const std::string& filename) const
     {
-        unsigned int error = lodepng::encode(filename, pixels, width, height);
-        if (error != 0)
+        int stride = static_cast<int>(width) * 4;
+        int ok     = stbi_write_png(filename.c_str(), static_cast<int>(width), static_cast<int>(height), 4, pixels.data(), stride);
+        if (ok == 0)
         {
-            throw std::runtime_error(std::string("Failed to encode PNG file: ") + lodepng_error_text(error));
+            throw std::runtime_error("Failed to write PNG file: " + filename);
         }
     }
 
     std::vector<uint8_t> Texture::encodeToPngMemory() const
     {
         std::vector<uint8_t> encoded;
-        unsigned int         error = lodepng::encode(encoded, pixels, width, height);
-        if (error != 0)
+        int                  stride = static_cast<int>(width) * 4;
+        int                  ok     = stbi_write_png_to_func(&Texture::writePngCallback, &encoded, static_cast<int>(width), static_cast<int>(height), 4, pixels.data(), stride);
+        if (ok == 0)
         {
-            throw std::runtime_error(std::string("Failed to encode PNG memory: ") + lodepng_error_text(error));
+            throw std::runtime_error("Failed to encode PNG memory");
         }
         return encoded;
     }
 
+    Texture Texture::loadFromFile(const std::string& filename)
+    {
+        int      decodedWidth    = 0;
+        int      decodedHeight   = 0;
+        int      decodedChannels = 0;
+        stbi_uc* rawData         = stbi_load(filename.c_str(), &decodedWidth, &decodedHeight, &decodedChannels, 4);
+        if (!rawData)
+        {
+            throw std::runtime_error("Failed to load image file: " + filename);
+        }
+
+        size_t               byteCount = static_cast<size_t>(decodedWidth) * static_cast<size_t>(decodedHeight) * 4;
+        std::vector<uint8_t> decoded(rawData, rawData + byteCount);
+        stbi_image_free(rawData);
+        return Texture(static_cast<uint32_t>(decodedWidth), static_cast<uint32_t>(decodedHeight), decoded);
+    }
+
+    Texture Texture::loadFromMemory(const std::vector<uint8_t>& encodedBytes)
+    {
+        int      decodedWidth    = 0;
+        int      decodedHeight   = 0;
+        int      decodedChannels = 0;
+        stbi_uc* rawData         = stbi_load_from_memory(encodedBytes.data(), static_cast<int>(encodedBytes.size()), &decodedWidth, &decodedHeight, &decodedChannels, 4);
+        if (!rawData)
+        {
+            throw std::runtime_error("Failed to decode image from memory");
+        }
+
+        size_t               byteCount = static_cast<size_t>(decodedWidth) * static_cast<size_t>(decodedHeight) * 4;
+        std::vector<uint8_t> decoded(rawData, rawData + byteCount);
+        stbi_image_free(rawData);
+        return Texture(static_cast<uint32_t>(decodedWidth), static_cast<uint32_t>(decodedHeight), decoded);
+    }
+
     Texture Texture::loadFromPngFile(const std::string& filename)
     {
-        std::vector<uint8_t> decoded;
-        unsigned int         decodedWidth  = 0;
-        unsigned int         decodedHeight = 0;
-        unsigned int         error         = lodepng::decode(decoded, decodedWidth, decodedHeight, filename);
-        if (error != 0)
-        {
-            throw std::runtime_error(std::string("Failed to decode PNG file: ") + lodepng_error_text(error));
-        }
-        return Texture(static_cast<uint32_t>(decodedWidth), static_cast<uint32_t>(decodedHeight), decoded);
+        return loadFromFile(filename);
     }
 
     Texture Texture::loadFromPngMemory(const std::vector<uint8_t>& encodedBytes)
     {
-        std::vector<uint8_t> decoded;
-        unsigned int         decodedWidth  = 0;
-        unsigned int         decodedHeight = 0;
-        unsigned int         error         = lodepng::decode(decoded, decodedWidth, decodedHeight, encodedBytes);
-        if (error != 0)
-        {
-            throw std::runtime_error(std::string("Failed to decode PNG memory: ") + lodepng_error_text(error));
-        }
-        return Texture(static_cast<uint32_t>(decodedWidth), static_cast<uint32_t>(decodedHeight), decoded);
+        return loadFromMemory(encodedBytes);
+    }
+
+    void Texture::writePngCallback(void* context, void* data, int size)
+    {
+        auto*       buffer = static_cast<std::vector<uint8_t>*>(context);
+        const auto* bytes  = static_cast<const uint8_t*>(data);
+        buffer->insert(buffer->end(), bytes, bytes + size);
     }
 }
 

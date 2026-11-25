@@ -3,10 +3,11 @@ cmake_minimum_required(VERSION 3.20...3.30)
 project(CADacomb)
 
 find_package(glm REQUIRED)
-find_package(lodepng CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(smlib CONFIG REQUIRED)
 find_package(Jolt CONFIG REQUIRED)
+find_package(ufbx CONFIG REQUIRED)
 find_package(OpenMP)
 
 set(Animation_Files
@@ -68,6 +69,14 @@ set(Texture_Mapping_Files
     "Source/CADacomb/Texture/Mapping/TriangulationUVs.cpp"
 )
 source_group("Source/Texture/Mapping" FILES ${Texture_Mapping_Files})
+
+set(IO_Files
+    "Source/CADacomb/IO/FbxReader.h"
+    "Source/CADacomb/IO/FbxReader.cpp"
+    "Source/CADacomb/IO/FbxSceneData.h"
+    "Source/CADacomb/IO/FbxSceneData.cpp"
+)
+source_group("Source/IO" FILES ${IO_Files})
 
 set(Physics_Files
     "Source/CADacomb/Physics/README.md"
@@ -457,6 +466,7 @@ set(ALL_FILES
     ${Animation_Skinning_Files}
     ${Texture_Files}
     ${Texture_Mapping_Files}
+    ${IO_Files}
     ${Physics_Files}
     ${Physics_Interface_Files}
     ${Physics_Jolt_Files}
@@ -488,20 +498,23 @@ set_property(TARGET CADacomb PROPERTY CXX_STANDARD 20)
 
 target_link_libraries(CADacomb PUBLIC 
     glm::glm
-    lodepng
     nlohmann_json::nlohmann_json
     smlib::sm_api
     smlib::smlib
     Jolt::Jolt
+    ufbx::ufbx
 )
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(CADacomb PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-target_include_directories(CADacomb PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
-    $<INSTALL_INTERFACE:include>
+target_include_directories(CADacomb
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${Stb_INCLUDE_DIR}
 )
 
 install(TARGETS CADacomb
@@ -528,17 +541,20 @@ if(CADACOMB_BUILD_TESTS)
     target_link_libraries(CADacombTest PUBLIC 
         Catch2::Catch2
         glm::glm
-        lodepng
         nlohmann_json::nlohmann_json
         smlib::sm_api
         smlib::smlib
         Jolt::Jolt
+        ufbx::ufbx
     )
     if(OpenMP_CXX_FOUND)
         target_link_libraries(CADacombTest PUBLIC OpenMP::OpenMP_CXX)
     endif()
-    target_include_directories(CADacombTest PUBLIC 
-        ${CMAKE_CURRENT_SOURCE_DIR}/Source
+    target_include_directories(CADacombTest
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/Source
+        PRIVATE
+            ${Stb_INCLUDE_DIR}
     )
     set_property(TARGET CADacombTest PROPERTY COMPILE_DEFINITIONS ISTESTPROJECT=1)
 

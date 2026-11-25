@@ -3,9 +3,11 @@
   "version-string": "0.0.1",
   "dependencies": [
     "glm",
+    "stb",
     "nlohmann-json",
     "smlib",
     "joltphysics",
+    "ufbx",
     "catch2"
   ],
   "features": {

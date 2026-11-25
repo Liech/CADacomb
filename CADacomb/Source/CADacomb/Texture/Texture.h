@@ -12,7 +12,7 @@
 
 namespace CADacomb::Texture
 {
-    // Headless RGBA8 2D texture with PNG serialization and optional 2D color grid conversion.
+    // Headless RGBA8 2D texture with stb image I/O (PNG, JPG, TGA, BMP) and optional 2D color grid conversion.
     class Texture
     {
       public:
@@ -45,10 +45,14 @@ namespace CADacomb::Texture
 
         void                 saveToPngFile(const std::string& filename) const;
         std::vector<uint8_t> encodeToPngMemory() const;
+        static Texture       loadFromFile(const std::string& filename);
+        static Texture       loadFromMemory(const std::vector<uint8_t>& encodedBytes);
         static Texture       loadFromPngFile(const std::string& filename);
         static Texture       loadFromPngMemory(const std::vector<uint8_t>& encodedBytes);
 
       private:
+        static void writePngCallback(void* context, void* data, int size);
+
         uint32_t             width  = 0;
         uint32_t             height = 0;
         std::vector<uint8_t> pixels;
