@@ -459,14 +459,15 @@ TEST_CASE("ClusterToCadConverter/BoxClusteringToPlanarCad")
 
     REQUIRE(shape != nullptr);
 
-    CADacomb::AABB3 triBounds = boxTri.getAABB();
+    std::pair<glm::dvec3, glm::dvec3> triPair = boxTri.getAABB();
+    CADacomb::AABB3                   triBounds(triPair.first, triPair.first + triPair.second);
     CADacomb::AABB3 bounds    = shape->getAABB();
-    REQUIRE(bounds.min.x == Catch::Approx(triBounds.min.x).margin(1e-3));
-    REQUIRE(bounds.min.y == Catch::Approx(triBounds.min.y).margin(1e-3));
-    REQUIRE(bounds.min.z == Catch::Approx(triBounds.min.z).margin(1e-3));
-    REQUIRE(bounds.max.x == Catch::Approx(triBounds.max.x).margin(1e-3));
-    REQUIRE(bounds.max.y == Catch::Approx(triBounds.max.y).margin(1e-3));
-    REQUIRE(bounds.max.z == Catch::Approx(triBounds.max.z).margin(1e-3));
+    REQUIRE(bounds.getMin().x == Catch::Approx(triBounds.getMin().x).margin(1e-3));
+    REQUIRE(bounds.getMin().y == Catch::Approx(triBounds.getMin().y).margin(1e-3));
+    REQUIRE(bounds.getMin().z == Catch::Approx(triBounds.getMin().z).margin(1e-3));
+    REQUIRE(bounds.getMax().x == Catch::Approx(triBounds.getMax().x).margin(1e-3));
+    REQUIRE(bounds.getMax().y == Catch::Approx(triBounds.getMax().y).margin(1e-3));
+    REQUIRE(bounds.getMax().z == Catch::Approx(triBounds.getMax().z).margin(1e-3));
 
     CADacomb::CAD::TessellationOptions     tessOptions;
     std::unique_ptr<CADacomb::Triangulation> tess = kernel.tessellate(*shape, tessOptions);

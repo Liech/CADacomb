@@ -70,6 +70,47 @@ set(Texture_Mapping_Files
 )
 source_group("Source/Texture/Mapping" FILES ${Texture_Mapping_Files})
 
+set(VectorGraphics_Data_Files
+    "Source/CADacomb/VectorGraphics/Data/VectorBounds.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorBounds.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorElement.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorElement.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorElementType.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorFillRule.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorGraphics.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorGraphics.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorGroup.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorGroup.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorPath.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorPath.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorSegment.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorSegment.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorSegmentType.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorStyle.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorStyle.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorSubpath.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorSubpath.cpp"
+    "Source/CADacomb/VectorGraphics/Data/VectorText.h"
+    "Source/CADacomb/VectorGraphics/Data/VectorText.cpp"
+)
+source_group("Source/VectorGraphics/Data" FILES ${VectorGraphics_Data_Files})
+
+set(VectorGraphics_Svg_Files
+    "Source/CADacomb/VectorGraphics/Svg/SvgReader.h"
+    "Source/CADacomb/VectorGraphics/Svg/SvgReader.cpp"
+    "Source/CADacomb/VectorGraphics/Svg/SvgWriter.h"
+    "Source/CADacomb/VectorGraphics/Svg/SvgWriter.cpp"
+    "Source/CADacomb/VectorGraphics/Svg/SvgXmlNode.h"
+    "Source/CADacomb/VectorGraphics/Svg/SvgXmlNode.cpp"
+)
+source_group("Source/VectorGraphics/Svg" FILES ${VectorGraphics_Svg_Files})
+
+set(VectorGraphics_Rasterizer_Files
+    "Source/CADacomb/VectorGraphics/Rasterizer/VectorGraphicsRasterizer.h"
+    "Source/CADacomb/VectorGraphics/Rasterizer/VectorGraphicsRasterizer.cpp"
+)
+source_group("Source/VectorGraphics/Rasterizer" FILES ${VectorGraphics_Rasterizer_Files})
+
 set(IO_Files
     "Source/CADacomb/IO/FbxReader.h"
     "Source/CADacomb/IO/FbxReader.cpp"
@@ -466,6 +507,9 @@ set(ALL_FILES
     ${Animation_Skinning_Files}
     ${Texture_Files}
     ${Texture_Mapping_Files}
+    ${VectorGraphics_Data_Files}
+    ${VectorGraphics_Svg_Files}
+    ${VectorGraphics_Rasterizer_Files}
     ${IO_Files}
     ${Physics_Files}
     ${Physics_Interface_Files}

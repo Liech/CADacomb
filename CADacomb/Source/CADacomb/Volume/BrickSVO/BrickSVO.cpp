@@ -423,8 +423,9 @@ namespace CADacomb
         const auto& allocatedBricks = svo.getBricks();
         REQUIRE_FALSE(allocatedBricks.empty());
 
-        for (const auto& brick : allocatedBricks)
+        for (size_t brickIndex = 0; brickIndex < allocatedBricks.size(); brickIndex++)
         {
+            const auto& brick = allocatedBricks[brickIndex];
             for (int z = 0; z < PADDED_SIZE; ++z)
             {
                 for (int y = 0; y < PADDED_SIZE; ++y)

@@ -679,9 +679,9 @@ TEST_CASE("BaseShapeGenerator/box")
     auto tri = CADacomb::BaseShapeGenerator::box(2.0f, 3.0f, 4.0f);
     REQUIRE(CADacomb::HalfEdgeHealth::isHealthy(tri));
     auto aabb = tri.getAABB();
-    REQUIRE(aabb.max.x == Catch::Approx(2.0));
-    REQUIRE(aabb.max.y == Catch::Approx(3.0));
-    REQUIRE(aabb.max.z == Catch::Approx(4.0));
+    REQUIRE((aabb.first.x + aabb.second.x) == Catch::Approx(2.0));
+    REQUIRE((aabb.first.y + aabb.second.y) == Catch::Approx(3.0));
+    REQUIRE((aabb.first.z + aabb.second.z) == Catch::Approx(4.0));
 }
 
 TEST_CASE("BaseShapeGenerator/pyramid")
@@ -733,8 +733,8 @@ TEST_CASE("BaseShapeGenerator/frustum")
     auto tri = CADacomb::BaseShapeGenerator::frustum(16, 1.5f, 0.6f, 2.0f);
     REQUIRE(CADacomb::HalfEdgeHealth::isHealthy(tri));
     auto aabb = tri.getAABB();
-    REQUIRE(aabb.min.z == Catch::Approx(0.0));
-    REQUIRE(aabb.max.z == Catch::Approx(2.0));
+    REQUIRE(aabb.first.z == Catch::Approx(0.0));
+    REQUIRE((aabb.first.z + aabb.second.z) == Catch::Approx(2.0));
 }
 
 TEST_CASE("BaseShapeGenerator/frustumMinimal")
@@ -748,8 +748,8 @@ TEST_CASE("BaseShapeGenerator/sphere")
     auto tri = CADacomb::BaseShapeGenerator::sphere(16, 8, 1.5f);
     REQUIRE(CADacomb::HalfEdgeHealth::isHealthy(tri));
     auto aabb = tri.getAABB();
-    REQUIRE(aabb.min.z == Catch::Approx(-1.5));
-    REQUIRE(aabb.max.z == Catch::Approx(1.5));
+    REQUIRE(aabb.first.z == Catch::Approx(-1.5));
+    REQUIRE((aabb.first.z + aabb.second.z) == Catch::Approx(1.5));
 }
 
 TEST_CASE("BaseShapeGenerator/sphereMinimal")
@@ -763,8 +763,8 @@ TEST_CASE("BaseShapeGenerator/torus")
     auto tri = CADacomb::BaseShapeGenerator::torus(24, 12, 2.0f, 0.5f);
     REQUIRE(CADacomb::HalfEdgeHealth::isHealthy(tri));
     auto aabb = tri.getAABB();
-    REQUIRE(aabb.min.z == Catch::Approx(-0.5));
-    REQUIRE(aabb.max.z == Catch::Approx(0.5));
+    REQUIRE(aabb.first.z == Catch::Approx(-0.5));
+    REQUIRE((aabb.first.z + aabb.second.z) == Catch::Approx(0.5));
 }
 
 TEST_CASE("BaseShapeGenerator/torusMinimal")
@@ -778,8 +778,8 @@ TEST_CASE("BaseShapeGenerator/capsule")
     auto tri = CADacomb::BaseShapeGenerator::capsule(16, 6, 0.5f, 1.5f);
     REQUIRE(CADacomb::HalfEdgeHealth::isHealthy(tri));
     auto aabb = tri.getAABB();
-    REQUIRE(aabb.min.z == Catch::Approx(-0.5));
-    REQUIRE(aabb.max.z == Catch::Approx(2.0));
+    REQUIRE(aabb.first.z == Catch::Approx(-0.5));
+    REQUIRE((aabb.first.z + aabb.second.z) == Catch::Approx(2.0));
 }
 
 TEST_CASE("BaseShapeGenerator/capsuleZeroHeight")
@@ -841,9 +841,9 @@ TEST_CASE("BaseShapeGenerator/ConvertLBracketToCad")
     std::unique_ptr<CADacomb::CAD::Shape> shape = converter.convert(kernel, tri, clusters, 1e-3, 1e-4, 1e-3, true);
     REQUIRE(shape != nullptr);
     auto aabb = shape->getAABB();
-    REQUIRE(aabb.max.x == Catch::Approx(2.0).margin(1e-2));
-    REQUIRE(aabb.max.y == Catch::Approx(1.0).margin(1e-2));
-    REQUIRE(aabb.max.z == Catch::Approx(2.0).margin(1e-2));
+    REQUIRE(aabb.getMax().x == Catch::Approx(2.0).margin(1e-2));
+    REQUIRE(aabb.getMax().y == Catch::Approx(1.0).margin(1e-2));
+    REQUIRE(aabb.getMax().z == Catch::Approx(2.0).margin(1e-2));
 }
 
 TEST_CASE("BaseShapeGenerator/ConvertSteppedBlockToCad")
@@ -855,9 +855,9 @@ TEST_CASE("BaseShapeGenerator/ConvertSteppedBlockToCad")
     std::unique_ptr<CADacomb::CAD::Shape> shape = converter.convert(kernel, tri, clusters, 1e-3, 1e-4, 1e-3, true);
     REQUIRE(shape != nullptr);
     auto aabb = shape->getAABB();
-    REQUIRE(aabb.max.x == Catch::Approx(2.0).margin(1e-2));
-    REQUIRE(aabb.max.y == Catch::Approx(1.0).margin(1e-2));
-    REQUIRE(aabb.max.z == Catch::Approx(1.5).margin(1e-2));
+    REQUIRE(aabb.getMax().x == Catch::Approx(2.0).margin(1e-2));
+    REQUIRE(aabb.getMax().y == Catch::Approx(1.0).margin(1e-2));
+    REQUIRE(aabb.getMax().z == Catch::Approx(1.5).margin(1e-2));
 }
 
 TEST_CASE("BaseShapeGenerator/ConvertOctahedronNaiveToCad")
@@ -868,7 +868,7 @@ TEST_CASE("BaseShapeGenerator/ConvertOctahedronNaiveToCad")
     std::unique_ptr<CADacomb::CAD::Shape>   shape = converter.convert(kernel, tri, 1e-4, true);
     REQUIRE(shape != nullptr);
     auto aabb = shape->getAABB();
-    REQUIRE(aabb.min.x == Catch::Approx(-1.5).margin(1e-2));
-    REQUIRE(aabb.max.x == Catch::Approx(1.5).margin(1e-2));
+    REQUIRE(aabb.getMin().x == Catch::Approx(-1.5).margin(1e-2));
+    REQUIRE(aabb.getMax().x == Catch::Approx(1.5).margin(1e-2));
 }
 #endif
