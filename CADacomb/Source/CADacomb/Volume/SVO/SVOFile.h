@@ -9,6 +9,8 @@
 #include <string>
 
 #include "CADacomb/Util/AABB3.h"
+#include "CADacomb/Util/Binary/BinaryReader.h"
+#include "CADacomb/Util/Binary/BinaryWriter.h"
 #include "CADacomb/Util/ProgressBar.h"
 #include "CADacomb/Volume/MergeStrategy/MergeStrategyType.h"
 #include "CADacomb/Volume/SVO/AnySVO.h"
@@ -87,26 +89,27 @@ namespace CADacomb
         header["transformation"] = transformJson;
 
         writeMagicAndHeader(stream, header);
+        BinaryWriter writer(stream);
 
         const auto& nodes     = svo.getRaw();
         uint64_t    nodeCount = static_cast<uint64_t>(nodes.size());
-        stream.write(reinterpret_cast<const char*>(&nodeCount), sizeof(nodeCount));
+        writer << nodeCount;
 
         ProgressBar bar(nodes.size(), "Saving SVO nodes");
         for (size_t i = 0; i < nodes.size(); i++)
         {
             const auto& node         = nodes[i];
             uint32_t    childPointer = node.childPointer;
-            stream.write(reinterpret_cast<const char*>(&childPointer), sizeof(childPointer));
+            writer << childPointer;
 
             if constexpr (std::is_same_v<T, bool>)
             {
                 uint8_t boolByte = node.value ? 1 : 0;
-                stream.write(reinterpret_cast<const char*>(&boolByte), sizeof(boolByte));
+                writer << boolByte;
             }
             else
             {
-                stream.write(reinterpret_cast<const char*>(&node.value), sizeof(T));
+                writer << node.value;
             }
 
             bar.addProgress(1);
@@ -117,14 +120,14 @@ namespace CADacomb
         }
 
         uint64_t parentCount = 0;
-        stream.write(reinterpret_cast<const char*>(&parentCount), sizeof(parentCount));
+        writer << parentCount;
 
         const auto& freeBlocks     = svo.getFreeBlocks();
         uint64_t    freeBlockCount = static_cast<uint64_t>(freeBlocks.size());
-        stream.write(reinterpret_cast<const char*>(&freeBlockCount), sizeof(freeBlockCount));
+        writer << freeBlockCount;
         if (freeBlockCount > 0)
         {
-            stream.write(reinterpret_cast<const char*>(freeBlocks.data()), freeBlockCount * sizeof(uint32_t));
+            writer << freeBlocks;
         }
     }
 
@@ -177,8 +180,9 @@ namespace CADacomb
             }
         }
 
-        uint64_t nodeCount = 0;
-        stream.read(reinterpret_cast<char*>(&nodeCount), sizeof(nodeCount));
+        BinaryReader reader(stream);
+        uint64_t     nodeCount = 0;
+        reader >> nodeCount;
         if (!stream)
         {
             throw std::runtime_error("Failed to read node count");
@@ -189,17 +193,17 @@ namespace CADacomb
         for (uint64_t i = 0; i < nodeCount; i++)
         {
             uint32_t childPointer = 0xFFFFFFFF;
-            stream.read(reinterpret_cast<char*>(&childPointer), sizeof(childPointer));
+            reader >> childPointer;
             T value{};
             if constexpr (std::is_same_v<T, bool>)
             {
                 uint8_t boolByte = 0;
-                stream.read(reinterpret_cast<char*>(&boolByte), sizeof(boolByte));
+                reader >> boolByte;
                 value = (boolByte != 0);
             }
             else
             {
-                stream.read(reinterpret_cast<char*>(&value), sizeof(T));
+                reader >> value;
             }
             nodes[i].childPointer = childPointer;
             nodes[i].value        = value;
@@ -212,7 +216,7 @@ namespace CADacomb
         }
 
         uint64_t parentCount = 0;
-        stream.read(reinterpret_cast<char*>(&parentCount), sizeof(parentCount));
+        reader >> parentCount;
         if (!stream)
         {
             throw std::runtime_error("Failed to read parent count");
@@ -223,7 +227,7 @@ namespace CADacomb
         }
 
         uint64_t freeBlockCount = 0;
-        stream.read(reinterpret_cast<char*>(&freeBlockCount), sizeof(freeBlockCount));
+        reader >> freeBlockCount;
         if (!stream)
         {
             throw std::runtime_error("Failed to read free block count");
@@ -231,7 +235,7 @@ namespace CADacomb
         std::vector<uint32_t> freeBlocks(freeBlockCount);
         if (freeBlockCount > 0)
         {
-            stream.read(reinterpret_cast<char*>(freeBlocks.data()), freeBlockCount * sizeof(uint32_t));
+            reader >> freeBlocks;
         }
 
         const MergeStrategy<T>& strategy = getMergeStrategyInstance<T>(mergeStrategyStr);

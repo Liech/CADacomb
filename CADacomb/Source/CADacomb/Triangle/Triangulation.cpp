@@ -1,9 +1,13 @@
 ﻿#include "CADacomb/Triangle/Triangulation.h"
 
 #include "CADacomb/Triangle/Util/STLWriter.h"
-#include <stl_reader.h>
+#include "CADacomb/Util/Binary/BinaryReader.h"
+#include "CADacomb/Util/Binary/BinaryWriter.h"
 #include "CADacomb/Util/Binary/base64.h"
 #include "CADacomb/Util/ProgressBar.h"
+#include <stl_reader.h>
+
+#include <sstream>
 
 #include <algorithm>
 #include <fstream>
@@ -180,47 +184,29 @@ namespace CADacomb
 
     std::string Triangulation::toBase64() const
     {
-        std::vector<unsigned char> buffer;
+        std::ostringstream stream;
+        BinaryWriter       writer(stream);
+        writer << vertices.size() << indices.size() << vertices << indices;
 
-        size_t vSize = vertices.size();
-        size_t iSize = indices.size();
-
-        auto append = [&](const auto& data)
-        {
-            const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&data);
-            buffer.insert(buffer.end(), ptr, ptr + sizeof(data));
-        };
-
-        append(vSize);
-        append(iSize);
-
-        const unsigned char* vPtr = reinterpret_cast<const unsigned char*>(vertices.data());
-        buffer.insert(buffer.end(), vPtr, vPtr + (vSize * sizeof(glm::dvec3)));
-
-        const unsigned char* iPtr = reinterpret_cast<const unsigned char*>(indices.data());
-        buffer.insert(buffer.end(), iPtr, iPtr + (iSize * sizeof(size_t)));
-
+        std::string                serialized = stream.str();
+        std::vector<unsigned char> buffer(serialized.begin(), serialized.end());
         return base64::base64_encode(buffer.data(), buffer.size());
     }
 
     Triangulation Triangulation::fromBase64(const std::string& base64Str)
     {
-        auto                 buffer = base64::base64_decode(base64Str);
-        const unsigned char* ptr    = buffer.data();
+        std::vector<unsigned char> buffer = base64::base64_decode(base64Str);
+        std::istringstream         stream(std::string(buffer.begin(), buffer.end()));
+        BinaryReader               reader(stream);
 
         Triangulation tri;
-
-        size_t vSize = *reinterpret_cast<const size_t*>(ptr);
-        ptr += sizeof(size_t);
-        size_t iSize = *reinterpret_cast<const size_t*>(ptr);
-        ptr += sizeof(size_t);
+        size_t        vSize = 0;
+        size_t        iSize = 0;
+        reader >> vSize >> iSize;
 
         tri.vertices.resize(vSize);
-        std::copy(ptr, ptr + (vSize * sizeof(glm::dvec3)), reinterpret_cast<unsigned char*>(tri.vertices.data()));
-        ptr += (vSize * sizeof(glm::dvec3));
-
         tri.indices.resize(iSize);
-        std::copy(ptr, ptr + (iSize * sizeof(size_t)), reinterpret_cast<unsigned char*>(tri.indices.data()));
+        reader >> tri.vertices >> tri.indices;
 
         return tri;
     }

@@ -1,7 +1,9 @@
 ﻿#include "CADacomb/Triangle/Util/STLWriter.h"
 
+#include "CADacomb/Util/Binary/BinaryWriter.h"
 #include "CADacomb/Util/ProgressBar.h"
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -29,8 +31,9 @@ namespace CADacomb
         std::strncpy(header, "CADacomb Binary STL Export", sizeof(header) - 1);
         stream.write(header, sizeof(header));
 
-        uint32_t triangleCount = static_cast<uint32_t>(data.size() / 3);
-        stream.write(reinterpret_cast<const char*>(&triangleCount), sizeof(uint32_t));
+        uint32_t     triangleCount = static_cast<uint32_t>(data.size() / 3);
+        BinaryWriter writer(stream);
+        writer << triangleCount;
 
         ProgressBar bar(data.size() / 3, "Writing binary STL");
 
@@ -50,20 +53,20 @@ namespace CADacomb
                 normal = glm::dvec3(0.0);
             }
 
-            float normalFloats[3] = { static_cast<float>(normal.x), static_cast<float>(normal.y), static_cast<float>(normal.z) };
-            stream.write(reinterpret_cast<const char*>(normalFloats), sizeof(normalFloats));
+            std::array<float, 3> normalFloats = { static_cast<float>(normal.x), static_cast<float>(normal.y), static_cast<float>(normal.z) };
+            writer << normalFloats;
 
-            float v1Floats[3] = { static_cast<float>(a.x), static_cast<float>(a.y), static_cast<float>(a.z) };
-            stream.write(reinterpret_cast<const char*>(v1Floats), sizeof(v1Floats));
+            std::array<float, 3> v1Floats = { static_cast<float>(a.x), static_cast<float>(a.y), static_cast<float>(a.z) };
+            writer << v1Floats;
 
-            float v2Floats[3] = { static_cast<float>(b.x), static_cast<float>(b.y), static_cast<float>(b.z) };
-            stream.write(reinterpret_cast<const char*>(v2Floats), sizeof(v2Floats));
+            std::array<float, 3> v2Floats = { static_cast<float>(b.x), static_cast<float>(b.y), static_cast<float>(b.z) };
+            writer << v2Floats;
 
-            float v3Floats[3] = { static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z) };
-            stream.write(reinterpret_cast<const char*>(v3Floats), sizeof(v3Floats));
+            std::array<float, 3> v3Floats = { static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z) };
+            writer << v3Floats;
 
             uint16_t attributeByteCount = 0;
-            stream.write(reinterpret_cast<const char*>(&attributeByteCount), sizeof(uint16_t));
+            writer << attributeByteCount;
 
             bar.addProgress(1);
             if (bar.isCanceled())

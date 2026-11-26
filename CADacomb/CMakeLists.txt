@@ -164,6 +164,10 @@ source_group("Source/Physics/Jolt" FILES ${Physics_Jolt_Files})
 set(Binary_Files
     "Source/CADacomb/Util/Binary/base64.h"
     "Source/CADacomb/Util/Binary/base64.cpp"
+    "Source/CADacomb/Util/Binary/BinaryReader.h"
+    "Source/CADacomb/Util/Binary/BinaryReader.cpp"
+    "Source/CADacomb/Util/Binary/BinaryWriter.h"
+    "Source/CADacomb/Util/Binary/BinaryWriter.cpp"
     "Source/CADacomb/Util/Binary/BufferRange.h"
     "Source/CADacomb/Util/Binary/BufferRange.cpp"
     "Source/CADacomb/Util/Binary/BufferSpan.h"
