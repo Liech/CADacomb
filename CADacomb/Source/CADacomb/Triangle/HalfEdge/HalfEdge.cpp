@@ -1,4 +1,4 @@
-#include "HalfEdge.h"
+﻿#include "HalfEdge.h"
 
 #ifdef ISTESTPROJECT
 #include <catch2/catch_test_macros.hpp>
@@ -44,42 +44,40 @@ namespace CADacomb
         return mesh;
     }
 
-    TEST_CASE("HalfEdgeMesh Basic Connectivity", "[halfedge]")
+    TEST_CASE("HalfEdgeMesh Basic Connectivity - Twin Relationship", "[halfedge]")
     {
         HalfEdgeMesh mesh = create_quad_mesh();
+        int64_t      e    = 2; // Edge 2->0
+        int64_t      t    = mesh.twin(e);
 
-        SECTION("Twin Relationship")
+        REQUIRE(t != SafeNull);
+        REQUIRE(mesh.half_edges[t].target_vertex == 2);
+        REQUIRE(mesh.twin(t) == e); // Twin of twin is self
+    }
+
+    TEST_CASE("HalfEdgeMesh Basic Connectivity - Source and Target", "[halfedge]")
+    {
+        HalfEdgeMesh mesh = create_quad_mesh();
+        int64_t      e    = 3; // 0 -> 2
+        REQUIRE(mesh.half_edges[e].target_vertex == 2);
+        REQUIRE(mesh.source(e) == 0);
+    }
+
+    TEST_CASE("HalfEdgeMesh Basic Connectivity - Face Cycles", "[halfedge]")
+    {
+        HalfEdgeMesh mesh    = create_quad_mesh();
+        int64_t      start_e = 0;
+        int64_t      e       = start_e;
+        int          count   = 0;
+
+        // Traverse Triangle 0
+        do
         {
-            int64_t e = 2; // Edge 2->0
-            int64_t t = mesh.twin(e);
+            e = mesh.next(e);
+            count++;
+        } while (e != start_e && count < 10);
 
-            REQUIRE(t != SafeNull);
-            REQUIRE(mesh.half_edges[t].target_vertex == 2);
-            REQUIRE(mesh.twin(t) == e); // Twin of twin is self
-        }
-
-        SECTION("Source and Target")
-        {
-            int64_t e = 3; // 0 -> 2
-            REQUIRE(mesh.half_edges[e].target_vertex == 2);
-            REQUIRE(mesh.source(e) == 0);
-        }
-
-        SECTION("Face Cycles")
-        {
-            int64_t start_e = 0;
-            int64_t e       = start_e;
-            int     count   = 0;
-
-            // Traverse Triangle 0
-            do
-            {
-                e = mesh.next(e);
-                count++;
-            } while (e != start_e && count < 10);
-
-            REQUIRE(count == 3);
-        }
+        REQUIRE(count == 3);
     }
 
     TEST_CASE("Simplified Vertex Orbit", "[topology]")

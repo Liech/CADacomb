@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Util/ProgressBar.h"
 #include "CADacomb/Volume/Flat/BinaryVolume.h"

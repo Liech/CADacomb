@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/KeyframeAnimation/Track/QuatKeyframe.h"
+﻿#include "CADacomb/Animation/KeyframeAnimation/Track/QuatKeyframe.h"
 
 namespace CADacomb::Animation
 {

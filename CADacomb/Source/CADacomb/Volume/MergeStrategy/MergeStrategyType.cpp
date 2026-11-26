@@ -1,4 +1,4 @@
-#include "MergeStrategyType.h"
+﻿#include "MergeStrategyType.h"
 
 namespace CADacomb
 {

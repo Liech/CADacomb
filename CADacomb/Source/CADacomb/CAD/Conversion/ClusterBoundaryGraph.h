@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "ClusterBoundaryChain.h"
 #include "ClusterLoopReference.h"

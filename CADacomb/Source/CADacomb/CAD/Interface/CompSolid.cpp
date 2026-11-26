@@ -1,4 +1,4 @@
-#include "CompSolid.h"
+﻿#include "CompSolid.h"
 
 namespace CADacomb::CAD
 {

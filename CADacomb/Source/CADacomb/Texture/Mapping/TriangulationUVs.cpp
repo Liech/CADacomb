@@ -1,4 +1,4 @@
-#include "CADacomb/Texture/Mapping/TriangulationUVs.h"
+﻿#include "CADacomb/Texture/Mapping/TriangulationUVs.h"
 
 namespace CADacomb::Texture
 {

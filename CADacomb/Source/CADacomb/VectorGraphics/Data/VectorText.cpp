@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Data/VectorText.h"
+﻿#include "CADacomb/VectorGraphics/Data/VectorText.h"
 
 namespace CADacomb::VectorGraphics
 {

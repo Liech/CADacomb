@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/Skeleton/Joint.h"
+﻿#include "CADacomb/Animation/Skeleton/Joint.h"
 
 namespace CADacomb::Animation
 {

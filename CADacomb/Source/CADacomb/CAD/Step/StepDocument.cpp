@@ -1,4 +1,4 @@
-#include "StepDocument.h"
+﻿#include "StepDocument.h"
 
 #include <stdexcept>
 

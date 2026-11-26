@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Animation/KeyframeAnimation/Track/QuatTrack.h"
 #include "CADacomb/Animation/KeyframeAnimation/Track/Vec3Track.h"

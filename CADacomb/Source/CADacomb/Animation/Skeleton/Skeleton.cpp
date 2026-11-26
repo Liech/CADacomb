@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/Skeleton/Skeleton.h"
+﻿#include "CADacomb/Animation/Skeleton/Skeleton.h"
 
 #include "CADacomb/Animation/Skeleton/SkeletonPose.h"
 

@@ -1,4 +1,4 @@
-#include "Writer.h"
+﻿#include "Writer.h"
 
 namespace MagicaVoxImporter
 {

@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Data/VectorPath.h"
+﻿#include "CADacomb/VectorGraphics/Data/VectorPath.h"
 
 namespace CADacomb::VectorGraphics
 {

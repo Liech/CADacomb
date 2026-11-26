@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/VectorGraphics/Data/VectorBounds.h"
 #include "CADacomb/VectorGraphics/Data/VectorElement.h"

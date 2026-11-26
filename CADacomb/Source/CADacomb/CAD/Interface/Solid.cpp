@@ -1,4 +1,4 @@
-#include "Solid.h"
+﻿#include "Solid.h"
 
 namespace CADacomb::CAD
 {

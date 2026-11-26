@@ -1,4 +1,4 @@
-#include "CADacomb/Triangle/EdgeCollapseCandidate.h"
+﻿#include "CADacomb/Triangle/EdgeCollapseCandidate.h"
 
 namespace CADacomb
 {

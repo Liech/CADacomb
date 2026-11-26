@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Animation/KeyframeAnimation/InterpolationMode.h"
 #include "CADacomb/Animation/KeyframeAnimation/Track/Vec3Keyframe.h"

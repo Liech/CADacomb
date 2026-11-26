@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/VectorGraphics/Svg/SvgXmlNode.h"
 #include "CADacomb/VectorGraphics/Data/VectorGraphics.h"

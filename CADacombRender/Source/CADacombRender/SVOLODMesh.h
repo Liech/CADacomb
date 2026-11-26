@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Util/AABB3.h"
 #include "CADacomb/Volume/LODStrategy/LODStrategy.h"

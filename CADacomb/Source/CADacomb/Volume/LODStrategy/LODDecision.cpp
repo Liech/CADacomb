@@ -1,4 +1,4 @@
-#include "LODDecision.h"
+﻿#include "LODDecision.h"
 
 namespace CADacomb
 {

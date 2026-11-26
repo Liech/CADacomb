@@ -1,4 +1,4 @@
-#include "CADacombRender/Texture/TextureImageConverter.h"
+﻿#include "CADacombRender/Texture/TextureImageConverter.h"
 
 #include "Vulcant/Interface/VulcantDevice.h"
 #include "Vulcant/Interface/VulcantImage.h"

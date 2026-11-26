@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Volume/MagicaVox/Chunk/Color.h"
 #include "Chunk.h"

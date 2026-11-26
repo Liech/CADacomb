@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Svg/SvgXmlNode.h"
+﻿#include "CADacomb/VectorGraphics/Svg/SvgXmlNode.h"
 
 namespace CADacomb::VectorGraphics
 {

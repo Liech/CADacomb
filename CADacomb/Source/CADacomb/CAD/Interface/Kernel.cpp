@@ -1,4 +1,4 @@
-#include "Kernel.h"
+﻿#include "Kernel.h"
 
 namespace CADacomb::CAD
 {

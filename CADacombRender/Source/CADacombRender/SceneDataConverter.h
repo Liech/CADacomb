@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Volume/LODStrategy/SceneData.h"
 #include "Vulcant/Toolkit/SceneData.h"

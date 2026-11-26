@@ -1,4 +1,4 @@
-#include "CADacomb/Triangle/MeshSimplifier.h"
+﻿#include "CADacomb/Triangle/MeshSimplifier.h"
 
 #include "CADacomb/Triangle/EdgeCollapseCandidate.h"
 #include "CADacomb/Triangle/SimplificationTriangle.h"

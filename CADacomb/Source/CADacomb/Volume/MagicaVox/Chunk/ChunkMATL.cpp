@@ -1,4 +1,4 @@
-#include "ChunkMATL.h"
+﻿#include "ChunkMATL.h"
 
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 #include <map>

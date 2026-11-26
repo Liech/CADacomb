@@ -1,4 +1,4 @@
-#include "CADacomb/Triangle/Util/STLWriter.h"
+﻿#include "CADacomb/Triangle/Util/STLWriter.h"
 
 #include "CADacomb/Util/ProgressBar.h"
 

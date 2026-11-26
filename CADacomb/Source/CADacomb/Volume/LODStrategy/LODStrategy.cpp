@@ -1,4 +1,4 @@
-#include "LODStrategy.h"
+﻿#include "LODStrategy.h"
 
 namespace CADacomb
 {

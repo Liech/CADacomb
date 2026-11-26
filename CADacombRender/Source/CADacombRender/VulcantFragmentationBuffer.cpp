@@ -1,4 +1,4 @@
-#include "VulcantFragmentationBuffer.h"
+﻿#include "VulcantFragmentationBuffer.h"
 
 #ifdef ISTESTPROJECT
 #include "Vulcant/VulcantV/VulcantVDevice.h"

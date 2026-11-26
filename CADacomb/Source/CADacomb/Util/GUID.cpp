@@ -1,4 +1,4 @@
-#include "GUID.h"
+﻿#include "GUID.h"
 
 #include <iomanip>
 #include <random>

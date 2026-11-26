@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/Skinning/VertexSkinWeights.h"
+﻿#include "CADacomb/Animation/Skinning/VertexSkinWeights.h"
 
 namespace CADacomb::Animation
 {

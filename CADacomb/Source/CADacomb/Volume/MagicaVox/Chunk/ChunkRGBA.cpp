@@ -1,4 +1,4 @@
-#include "ChunkRGBA.h"
+﻿#include "ChunkRGBA.h"
 
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 

@@ -1,4 +1,4 @@
-#include "CADacomb/Volume/MagicaVox/IO/Reader.h"
+﻿#include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 #include "CADacomb/Volume/MagicaVox/Chunk/Chunk.h"
 #include "CADacomb/Volume/MagicaVox/Chunk/ChunkFactory.h"
 #include <stdexcept>

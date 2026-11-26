@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/KeyframeAnimation/Track/QuatTrack.h"
+﻿#include "CADacomb/Animation/KeyframeAnimation/Track/QuatTrack.h"
 
 #include <algorithm>
 

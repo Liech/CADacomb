@@ -1,4 +1,4 @@
-#include "ClusterLoopReference.h"
+﻿#include "ClusterLoopReference.h"
 
 namespace CADacomb::CAD
 {

@@ -1,4 +1,4 @@
-#include "PagedVector.h"
+﻿#include "PagedVector.h"
 
 #ifdef ISTESTPROJECT
 #include <catch2/catch_test_macros.hpp>

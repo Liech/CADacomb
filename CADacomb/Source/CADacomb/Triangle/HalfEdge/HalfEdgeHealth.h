@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "HalfEdge.h"
 #include <string>

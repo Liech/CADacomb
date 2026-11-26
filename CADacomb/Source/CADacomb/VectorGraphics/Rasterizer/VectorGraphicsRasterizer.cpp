@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Rasterizer/VectorGraphicsRasterizer.h"
+﻿#include "CADacomb/VectorGraphics/Rasterizer/VectorGraphicsRasterizer.h"
 
 #include "CADacomb/VectorGraphics/Data/VectorGroup.h"
 #include "CADacomb/VectorGraphics/Data/VectorPath.h"

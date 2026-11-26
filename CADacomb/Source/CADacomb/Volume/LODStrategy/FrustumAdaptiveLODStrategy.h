@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "LODStrategy.h"
 #include <glm/glm.hpp>

@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Data/VectorSubpath.h"
+﻿#include "CADacomb/VectorGraphics/Data/VectorSubpath.h"
 
 #include <algorithm>
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Texture/Texture.h"
 #include "Vulcant/Interface/VulcantImageUsage.h"

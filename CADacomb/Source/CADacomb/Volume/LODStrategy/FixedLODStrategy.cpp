@@ -1,4 +1,4 @@
-#include "FixedLODStrategy.h"
+﻿#include "FixedLODStrategy.h"
 
 namespace CADacomb
 {

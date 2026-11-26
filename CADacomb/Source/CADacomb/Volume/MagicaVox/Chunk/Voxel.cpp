@@ -1,4 +1,4 @@
-#include "Voxel.h"
+﻿#include "Voxel.h"
 
 namespace MagicaVoxImporter
 {

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Texture/TextureColorSpace.h"
 #include "CADacomb/Texture/TextureFilterMode.h"

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Animation/KeyframeAnimation/Track/JointTrack.h"
 #include "CADacomb/Animation/Skeleton/SkeletonPose.h"

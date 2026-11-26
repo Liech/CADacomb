@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/Skinning/TriangulationSkinning.h"
+﻿#include "CADacomb/Animation/Skinning/TriangulationSkinning.h"
 
 namespace CADacomb::Animation
 {

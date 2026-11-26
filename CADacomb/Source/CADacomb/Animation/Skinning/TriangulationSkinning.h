@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Animation/Skinning/VertexSkinWeights.h"
 

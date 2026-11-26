@@ -1,4 +1,4 @@
-#include "StepReaderSm.h"
+﻿#include "StepReaderSm.h"
 
 #include "CADacomb/CAD/Step/StepArgumentType.h"
 #include "CADacomb/CAD/Step/StepParser.h"

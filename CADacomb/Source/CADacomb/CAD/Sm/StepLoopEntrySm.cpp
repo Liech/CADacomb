@@ -1,4 +1,4 @@
-#include "StepLoopEntrySm.h"
+﻿#include "StepLoopEntrySm.h"
 
 namespace CADacomb::CAD
 {

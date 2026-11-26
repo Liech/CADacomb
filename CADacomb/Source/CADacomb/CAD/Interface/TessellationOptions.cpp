@@ -1,4 +1,4 @@
-#include "TessellationOptions.h"
+﻿#include "TessellationOptions.h"
 
 namespace CADacomb::CAD
 {

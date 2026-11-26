@@ -1,4 +1,4 @@
-#include "ChunkXYZI.h"
+﻿#include "ChunkXYZI.h"
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 #include "CADacomb/Volume/MagicaVox/IO/Writer.h"
 

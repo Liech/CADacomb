@@ -1,4 +1,4 @@
-#include "BrickSVO.h"
+﻿#include "BrickSVO.h"
 
 namespace CADacomb
 {

@@ -1,4 +1,4 @@
-#include "BaseShapeGenerator.h"
+﻿#include "BaseShapeGenerator.h"
 
 namespace CADacomb
 {

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Texture/Mapping/TriangulationUVs.h"
 #include "CADacomb/Texture/Texture.h"

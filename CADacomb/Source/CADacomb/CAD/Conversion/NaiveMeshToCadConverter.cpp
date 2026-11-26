@@ -1,4 +1,4 @@
-#include "NaiveMeshToCadConverter.h"
+﻿#include "NaiveMeshToCadConverter.h"
 
 #include "CADacomb/CAD/Interface/Kernel.h"
 #include "CADacomb/CAD/Interface/Shape.h"

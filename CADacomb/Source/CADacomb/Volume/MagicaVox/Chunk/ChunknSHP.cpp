@@ -1,4 +1,4 @@
-#include "ChunknSHP.h"
+﻿#include "ChunknSHP.h"
 
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 

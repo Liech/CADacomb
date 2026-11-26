@@ -1,4 +1,4 @@
-#include "Shape.h"
+﻿#include "Shape.h"
 
 namespace CADacomb::CAD
 {

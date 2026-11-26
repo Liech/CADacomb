@@ -1,4 +1,4 @@
-#include "ChunkLAYR.h"
+﻿#include "ChunkLAYR.h"
 
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 

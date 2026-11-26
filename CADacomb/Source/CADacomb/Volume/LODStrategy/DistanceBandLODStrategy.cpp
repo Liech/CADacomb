@@ -1,4 +1,4 @@
-#include "DistanceBandLODStrategy.h"
+﻿#include "DistanceBandLODStrategy.h"
 
 namespace CADacomb
 {

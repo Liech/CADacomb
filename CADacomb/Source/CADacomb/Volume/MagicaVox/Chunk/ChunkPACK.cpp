@@ -1,4 +1,4 @@
-#include "ChunkPACK.h"
+﻿#include "ChunkPACK.h"
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 
 namespace MagicaVoxImporter

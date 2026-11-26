@@ -1,4 +1,4 @@
-#include "StepSurfaceNormalInfo.h"
+﻿#include "StepSurfaceNormalInfo.h"
 
 namespace CADacomb::CAD
 {

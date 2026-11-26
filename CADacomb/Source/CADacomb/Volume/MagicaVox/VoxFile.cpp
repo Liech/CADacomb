@@ -1,4 +1,4 @@
-#include "VoxFile.h"
+﻿#include "VoxFile.h"
 
 #include <cassert>
 #include <fstream>

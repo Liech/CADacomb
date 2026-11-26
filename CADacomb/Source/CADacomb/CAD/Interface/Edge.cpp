@@ -1,4 +1,4 @@
-#include "Edge.h"
+﻿#include "Edge.h"
 
 namespace CADacomb::CAD
 {

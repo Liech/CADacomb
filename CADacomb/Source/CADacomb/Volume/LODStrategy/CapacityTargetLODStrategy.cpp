@@ -1,4 +1,4 @@
-#include "CapacityTargetLODStrategy.h"
+﻿#include "CapacityTargetLODStrategy.h"
 #include <algorithm>
 #include <cmath>
 

@@ -1,4 +1,4 @@
-#include "ScreenSpaceLODStrategy.h"
+﻿#include "ScreenSpaceLODStrategy.h"
 #include <algorithm>
 #include <cmath>
 

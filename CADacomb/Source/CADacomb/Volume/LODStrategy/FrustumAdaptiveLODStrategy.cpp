@@ -1,4 +1,4 @@
-#include "FrustumAdaptiveLODStrategy.h"
+﻿#include "FrustumAdaptiveLODStrategy.h"
 #include <algorithm>
 #include <cmath>
 

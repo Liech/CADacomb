@@ -1,4 +1,4 @@
-#include "ChunknTRN.h"
+﻿#include "ChunknTRN.h"
 #include "CADacomb/Volume/MagicaVox/IO/Reader.h"
 #include <stdexcept>
 

@@ -1,4 +1,4 @@
-#include "VoxFileRaw.h"
+﻿#include "VoxFileRaw.h"
 
 #include <algorithm>
 #include <fstream>

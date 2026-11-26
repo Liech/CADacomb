@@ -1,4 +1,4 @@
-#include "HalfEdgeHealth.h"
+﻿#include "HalfEdgeHealth.h"
 
 #include "CADacomb/Triangle/Triangulation.h"
 #include <iomanip>

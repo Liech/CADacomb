@@ -1,4 +1,4 @@
-#include "CADacomb/Animation/KeyframeAnimation/Track/Vec3Track.h"
+﻿#include "CADacomb/Animation/KeyframeAnimation/Track/Vec3Track.h"
 
 #include <algorithm>
 

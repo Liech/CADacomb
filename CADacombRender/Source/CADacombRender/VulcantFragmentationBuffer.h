@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CADacomb/Util/Binary/DefragmentationBuffer.h"
 #include "Vulcant/Interface/VulcantBuffer.h"

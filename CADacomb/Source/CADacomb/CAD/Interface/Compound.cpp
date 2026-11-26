@@ -1,4 +1,4 @@
-#include "Compound.h"
+﻿#include "Compound.h"
 
 namespace CADacomb::CAD
 {

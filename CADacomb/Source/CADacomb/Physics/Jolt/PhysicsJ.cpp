@@ -1,4 +1,4 @@
-#include "CADacomb/Physics/Jolt/PhysicsJ.h"
+﻿#include "CADacomb/Physics/Jolt/PhysicsJ.h"
 
 #include "CADacomb/Physics/Jolt/BalloonSoftBodyBuilderJ.h"
 #include "CADacomb/Physics/Jolt/InternalStrutsSoftBodyBuilderJ.h"

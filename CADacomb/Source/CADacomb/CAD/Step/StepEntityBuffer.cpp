@@ -1,4 +1,4 @@
-#include "StepEntityBuffer.h"
+﻿#include "StepEntityBuffer.h"
 
 #include <algorithm>
 #include <cmath>

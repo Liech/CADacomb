@@ -1,4 +1,4 @@
-#include "CADacomb/Triangle/SimplificationTriangle.h"
+﻿#include "CADacomb/Triangle/SimplificationTriangle.h"
 
 namespace CADacomb
 {

@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Svg/SvgReader.h"
+﻿#include "CADacomb/VectorGraphics/Svg/SvgReader.h"
 
 #include "CADacomb/VectorGraphics/Data/VectorGroup.h"
 #include "CADacomb/VectorGraphics/Data/VectorText.h"

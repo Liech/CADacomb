@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "StepArgument.h"
 #include "StepDocument.h"

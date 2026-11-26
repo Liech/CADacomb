@@ -1,4 +1,4 @@
-#include "Clustering.h"
+﻿#include "Clustering.h"
 
 #include "CADacomb/Triangle/HalfEdge/HalfEdge.h"
 #include "CADacomb/Triangle/HalfEdge/HalfEdgeHealth.h"

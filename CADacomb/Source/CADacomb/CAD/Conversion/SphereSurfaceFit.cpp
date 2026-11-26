@@ -1,4 +1,4 @@
-#include "SphereSurfaceFit.h"
+﻿#include "SphereSurfaceFit.h"
 
 #include "CADacomb/Triangle/Triangulation.h"
 

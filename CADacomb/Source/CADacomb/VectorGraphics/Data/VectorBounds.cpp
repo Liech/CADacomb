@@ -1,4 +1,4 @@
-#include "CADacomb/VectorGraphics/Data/VectorBounds.h"
+﻿#include "CADacomb/VectorGraphics/Data/VectorBounds.h"
 
 #include <algorithm>
 
