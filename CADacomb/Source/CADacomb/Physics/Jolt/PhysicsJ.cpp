@@ -1,4 +1,4 @@
-﻿#include "CADacomb/Physics/Jolt/PhysicsJ.h"
+#include "CADacomb/Physics/Jolt/PhysicsJ.h"
 
 #include "CADacomb/Physics/Jolt/BalloonSoftBodyBuilderJ.h"
 #include "CADacomb/Physics/Jolt/InternalStrutsSoftBodyBuilderJ.h"
@@ -379,10 +379,10 @@ TEST_CASE("PhysicsJ/SoftBodyDeformsAndSettlesOnStaticFloor")
     std::unique_ptr<CADacomb::Physics::Physics> physics = std::make_unique<CADacomb::Physics::PhysicsJ>();
 
     CADacomb::Triangulation floorMesh = CADacomb::BaseShapeGenerator::box(20.0f, 1.0f, 20.0f);
-    glm::dmat4              floorTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(0.0, -1.0, 0.0));
+    glm::dmat4              floorTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(-10.0, -1.0, -10.0));
     auto                    floorBody = physics->createRigidBody(floorMesh, floorTf, true);
 
-    CADacomb::Triangulation softMesh = CADacomb::BaseShapeGenerator::sphere(1.0f, 12, 12);
+    CADacomb::Triangulation softMesh = CADacomb::BaseShapeGenerator::sphere(12, 12, 1.0f);
     glm::dmat4              softTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(0.0, 1.8, 0.0));
     auto                    softBody = physics->createSoftBody(softMesh, softTf, CADacomb::Physics::SoftBodyMode::Balloon, 1.0, 1500.0, 0.0001, 0.001, 0.0001, 4, 0.2, 0.3, 0.0, 10);
 
@@ -414,10 +414,10 @@ TEST_CASE("PhysicsJ/SoftBodyInternalStrutsAndVolumetricModes")
     std::unique_ptr<CADacomb::Physics::Physics> physics = std::make_unique<CADacomb::Physics::PhysicsJ>();
 
     CADacomb::Triangulation floorMesh = CADacomb::BaseShapeGenerator::box(20.0f, 1.0f, 20.0f);
-    glm::dmat4              floorTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(0.0, -1.0, 0.0));
+    glm::dmat4              floorTf   = glm::translate(glm::dmat4(1.0), glm::dvec3(-10.0, -1.0, -10.0));
     auto                    floorBody = physics->createRigidBody(floorMesh, floorTf, true);
 
-    CADacomb::Triangulation softMesh = CADacomb::BaseShapeGenerator::sphere(1.0f, 10, 10);
+    CADacomb::Triangulation softMesh = CADacomb::BaseShapeGenerator::sphere(10, 10, 1.0f);
     glm::dmat4              strutsTf = glm::translate(glm::dmat4(1.0), glm::dvec3(-2.5, 1.8, 0.0));
     auto                    strutsSb = physics->createSoftBody(softMesh, strutsTf, CADacomb::Physics::SoftBodyMode::InternalStruts, 1.0, 0.0, 0.0001, 0.001, 0.0002, 4, 0.2, 0.4, 0.0, 12);
 

@@ -117,11 +117,8 @@ namespace CADacomb
         for (size_t i = 0; i < input.vertices.size(); i++)
         {
             const glm::dvec3&                     v = input.vertices[i];
-            std::tuple<int64_t, int64_t, int64_t> key(
-              static_cast<int64_t>(std::llround(v.x * inv)),
-              static_cast<int64_t>(std::llround(v.y * inv)),
-              static_cast<int64_t>(std::llround(v.z * inv)));
-            auto it = quantMap.find(key);
+            std::tuple<int64_t, int64_t, int64_t> key(static_cast<int64_t>(std::llround(v.x * inv)), static_cast<int64_t>(std::llround(v.y * inv)), static_cast<int64_t>(std::llround(v.z * inv)));
+            auto                                  it = quantMap.find(key);
             if (it == quantMap.end())
             {
                 size_t newIdx = outVertices.size();
@@ -458,8 +455,8 @@ namespace CADacomb
 
 TEST_CASE("MeshSimplifier/SimplifyByPercentAndTriangleCount")
 {
-    auto sphere        = CADacomb::BaseShapeGenerator::sphere(1.0, 24, 12);
-    size_t origTris    = sphere.indices.size() / 3;
+    auto   sphere   = CADacomb::BaseShapeGenerator::sphere(24, 12, 1.0f);
+    size_t origTris = sphere.indices.size() / 3;
     REQUIRE(origTris > 100);
 
     auto byPercent = CADacomb::MeshSimplifier::simplifyByPercent(sphere, 50.0);

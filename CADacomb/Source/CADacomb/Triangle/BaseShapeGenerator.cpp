@@ -373,6 +373,11 @@ namespace CADacomb
         float r = radius > 0.0f ? radius : 0.5f;
         float h = height >= 0.0f ? height : 1.0f;
 
+        if (h == 0.0f)
+        {
+            return sphere(segments, rings * 2, r);
+        }
+
         Triangulation m;
         size_t        bottomPoleIdx = 0;
         m.vertices.push_back({ 0.0f, 0.0f, -r });
@@ -461,16 +466,7 @@ namespace CADacomb
             { 0.0f, 0.0f,    r },
             { 0.0f, 0.0f,   -r }
         };
-        m.indices = {
-            0, 2, 4,
-            2, 1, 4,
-            1, 3, 4,
-            3, 0, 4,
-            2, 0, 5,
-            1, 2, 5,
-            3, 1, 5,
-            0, 3, 5
-        };
+        m.indices = { 0, 2, 4, 2, 1, 4, 1, 3, 4, 3, 0, 4, 2, 0, 5, 1, 2, 5, 3, 1, 5, 0, 3, 5 };
         return m;
     }
 
@@ -501,10 +497,7 @@ namespace CADacomb
             { 0.0f,  wid,  hgt }
         };
 
-        m.indices = {
-            0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5,
-            6, 8, 7, 6, 9, 8, 6, 10, 9, 6, 11, 10
-        };
+        m.indices = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 6, 8, 7, 6, 9, 8, 6, 10, 9, 6, 11, 10 };
 
         for (size_t i = 0; i < 6; i++)
         {
@@ -543,10 +536,7 @@ namespace CADacomb
             { 0.0f,  wid,  hgt }
         };
 
-        m.indices = {
-            0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5,
-            6, 8, 7, 6, 9, 8, 6, 10, 9, 6, 11, 10
-        };
+        m.indices = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 6, 8, 7, 6, 9, 8, 6, 10, 9, 6, 11, 10 };
 
         for (size_t i = 0; i < 6; i++)
         {
@@ -566,10 +556,10 @@ namespace CADacomb
         if (segments % 4 != 0 || segments == 0)
             segments = (segments / 4 + 1) * 4;
 
-        float len = length > 0.2f ? length : 2.0f;
-        float wid = width > 0.1f ? width : 1.0f;
-        float thk = thickness > 0.05f ? thickness : 0.25f;
-        float hx  = len * 0.5f;
+        float len  = length > 0.2f ? length : 2.0f;
+        float wid  = width > 0.1f ? width : 1.0f;
+        float thk  = thickness > 0.05f ? thickness : 0.25f;
+        float hx   = len * 0.5f;
         float maxR = 0.42f * (hx < wid ? hx : wid);
         float r    = holeRadius > 0.01f ? (holeRadius < maxR ? holeRadius : maxR) : maxR * 0.6f;
 
@@ -862,10 +852,10 @@ TEST_CASE("BaseShapeGenerator/ConvertSteppedBlockToCad")
 
 TEST_CASE("BaseShapeGenerator/ConvertOctahedronNaiveToCad")
 {
-    auto                                    tri = CADacomb::BaseShapeGenerator::octahedron(1.5f);
-    CADacomb::CAD::KernelSm                 kernel;
-    CADacomb::CAD::NaiveMeshToCadConverter  converter;
-    std::unique_ptr<CADacomb::CAD::Shape>   shape = converter.convert(kernel, tri, 1e-4, true);
+    auto                                   tri = CADacomb::BaseShapeGenerator::octahedron(1.5f);
+    CADacomb::CAD::KernelSm                kernel;
+    CADacomb::CAD::NaiveMeshToCadConverter converter;
+    std::unique_ptr<CADacomb::CAD::Shape>  shape = converter.convert(kernel, tri, 1e-4, true);
     REQUIRE(shape != nullptr);
     auto aabb = shape->getAABB();
     REQUIRE(aabb.getMin().x == Catch::Approx(-1.5).margin(1e-2));
