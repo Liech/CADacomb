@@ -8,6 +8,7 @@
     "smlib",
     "joltphysics",
     "ufbx",
+    "stl-reader-modified",
     "catch2"
   ],
   "features": {

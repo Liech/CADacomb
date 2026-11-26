@@ -1,7 +1,7 @@
 ﻿#include "CADacomb/Triangle/Triangulation.h"
 
 #include "CADacomb/Triangle/Util/STLWriter.h"
-#include "CADacomb/Triangle/Util/stl_reader.h"
+#include <stl_reader.h>
 #include "CADacomb/Util/Binary/base64.h"
 #include "CADacomb/Util/ProgressBar.h"
 

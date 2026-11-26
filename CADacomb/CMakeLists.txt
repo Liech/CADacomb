@@ -301,7 +301,6 @@ set(Triangle_Files
     "Source/CADacomb/Triangle/SimplificationTriangle.cpp"
     "Source/CADacomb/Triangle/Triangulation.h"
     "Source/CADacomb/Triangle/Triangulation.cpp"
-    "Source/CADacomb/Triangle/sreiter_stl_reader_LICENSE"
 )
 source_group("Source/Triangle" FILES ${Triangle_Files})
 
@@ -318,7 +317,6 @@ source_group("Source/Triangle/HalfEdge" FILES ${Triangle_HalfEdge_Files})
 set(Triangle_Util_Files
     "Source/CADacomb/Triangle/Util/STLWriter.h"
     "Source/CADacomb/Triangle/Util/STLWriter.cpp"
-    "Source/CADacomb/Triangle/Util/stl_reader.h"
 )
 source_group("Source/Triangle/Util" FILES ${Triangle_Util_Files})
 
