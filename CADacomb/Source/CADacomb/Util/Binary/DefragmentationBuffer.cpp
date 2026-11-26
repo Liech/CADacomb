@@ -358,7 +358,7 @@ namespace CADacomb
         static inline int copyAssignments = 0;
         static inline int moveAssignments = 0;
 
-        MoveTracker() = default;
+        MoveTracker() {}
         MoveTracker(int v)
           : value(v)
         {

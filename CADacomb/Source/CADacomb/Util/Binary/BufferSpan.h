@@ -7,9 +7,8 @@ namespace CADacomb
     struct BufferSpan
     {
       public:
-        BufferSpan() = default;
+        BufferSpan();
         BufferSpan(size_t offset, size_t count, size_t packageId);
-        ~BufferSpan() = default;
 
         bool operator==(const BufferSpan& other) const;
 

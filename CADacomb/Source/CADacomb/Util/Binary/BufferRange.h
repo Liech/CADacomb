@@ -7,9 +7,8 @@ namespace CADacomb
     struct BufferRange
     {
       public:
-        BufferRange() = default;
+        BufferRange();
         BufferRange(size_t offset, size_t count);
-        ~BufferRange() = default;
 
         bool operator==(const BufferRange& other) const;
 

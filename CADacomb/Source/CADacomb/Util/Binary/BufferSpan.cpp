@@ -2,6 +2,8 @@
 
 namespace CADacomb
 {
+    BufferSpan::BufferSpan() {}
+
     BufferSpan::BufferSpan(size_t offset, size_t count, size_t packageId)
       : offset(offset)
       , count(count)

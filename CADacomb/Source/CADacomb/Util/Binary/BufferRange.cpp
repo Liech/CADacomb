@@ -2,6 +2,8 @@
 
 namespace CADacomb
 {
+    BufferRange::BufferRange() {}
+
     BufferRange::BufferRange(size_t offset, size_t count)
       : offset(offset)
       , count(count)

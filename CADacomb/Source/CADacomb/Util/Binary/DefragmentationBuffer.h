@@ -16,8 +16,8 @@ namespace CADacomb
     class DefragmentationBuffer
     {
       public:
-        DefragmentationBuffer()  = default;
-        ~DefragmentationBuffer() = default;
+        DefragmentationBuffer();
+        ~DefragmentationBuffer();
 
         size_t set(std::span<const T> package);
         size_t set(const std::vector<T>& package);
@@ -62,6 +62,16 @@ namespace CADacomb
         std::vector<BufferRange>             holeScratchBuffer;
         size_t                               nextPackageId = 1;
     };
+
+    template<typename T>
+    DefragmentationBuffer<T>::DefragmentationBuffer()
+    {
+    }
+
+    template<typename T>
+    DefragmentationBuffer<T>::~DefragmentationBuffer()
+    {
+    }
 
     template<typename T>
     size_t DefragmentationBuffer<T>::set(std::span<const T> package)
