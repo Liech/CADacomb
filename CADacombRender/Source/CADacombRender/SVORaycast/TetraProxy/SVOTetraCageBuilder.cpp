@@ -141,32 +141,34 @@ namespace CADacomb::Render
                 return static_cast<uint32_t>(gridVertexMap[flatIdx]);
             }
 
-            glm::vec3 uvw(static_cast<float>(gx) / static_cast<float>(grid),
-                          static_cast<float>(gy) / static_cast<float>(grid),
-                          static_cast<float>(gz) / static_cast<float>(grid));
-            glm::vec3 restVoxel  = uvw * static_cast<float>(dim);
-            glm::vec3 localPos   = bMin + uvw * bSize;
-            uint32_t  newIdx     = static_cast<uint32_t>(outVertices.size());
+            glm::vec3 uvw(static_cast<float>(gx) / static_cast<float>(grid), static_cast<float>(gy) / static_cast<float>(grid), static_cast<float>(gz) / static_cast<float>(grid));
+            glm::vec3 restVoxel    = uvw * static_cast<float>(dim);
+            glm::vec3 localPos     = bMin + uvw * bSize;
+            uint32_t  newIdx       = static_cast<uint32_t>(outVertices.size());
             gridVertexMap[flatIdx] = static_cast<int32_t>(newIdx);
             outVertices.emplace_back(restVoxel, localPos);
             return newIdx;
         };
 
-        const std::array<std::array<uint32_t, 4>, 5> evenTets = { {
-          { 0u, 3u, 5u, 6u },
-          { 1u, 0u, 3u, 5u },
-          { 2u, 0u, 6u, 3u },
-          { 4u, 0u, 5u, 6u },
-          { 7u, 3u, 6u, 5u },
-        } };
+        const std::array<std::array<uint32_t, 4>, 5> evenTets = {
+            {
+             { 0u, 3u, 5u, 6u },
+             { 1u, 0u, 3u, 5u },
+             { 2u, 0u, 6u, 3u },
+             { 4u, 0u, 5u, 6u },
+             { 7u, 3u, 6u, 5u },
+             }
+        };
 
-        const std::array<std::array<uint32_t, 4>, 5> oddTets = { {
-          { 1u, 2u, 4u, 7u },
-          { 0u, 1u, 2u, 4u },
-          { 3u, 1u, 7u, 2u },
-          { 5u, 1u, 4u, 7u },
-          { 6u, 2u, 7u, 4u },
-        } };
+        const std::array<std::array<uint32_t, 4>, 5> oddTets = {
+            {
+             { 1u, 2u, 4u, 7u },
+             { 0u, 1u, 2u, 4u },
+             { 3u, 1u, 7u, 2u },
+             { 5u, 1u, 4u, 7u },
+             { 6u, 2u, 7u, 4u },
+             }
+        };
 
         for (uint32_t cz = 0u; cz < grid; cz++)
         {
@@ -180,14 +182,8 @@ namespace CADacomb::Render
                     }
 
                     std::array<uint32_t, 8> corners = {
-                        getOrCreateVertex(cx, cy, cz),
-                        getOrCreateVertex(cx + 1u, cy, cz),
-                        getOrCreateVertex(cx, cy + 1u, cz),
-                        getOrCreateVertex(cx + 1u, cy + 1u, cz),
-                        getOrCreateVertex(cx, cy, cz + 1u),
-                        getOrCreateVertex(cx + 1u, cy, cz + 1u),
-                        getOrCreateVertex(cx, cy + 1u, cz + 1u),
-                        getOrCreateVertex(cx + 1u, cy + 1u, cz + 1u),
+                        getOrCreateVertex(cx, cy, cz),      getOrCreateVertex(cx + 1u, cy, cz),      getOrCreateVertex(cx, cy + 1u, cz),      getOrCreateVertex(cx + 1u, cy + 1u, cz),
+                        getOrCreateVertex(cx, cy, cz + 1u), getOrCreateVertex(cx + 1u, cy, cz + 1u), getOrCreateVertex(cx, cy + 1u, cz + 1u), getOrCreateVertex(cx + 1u, cy + 1u, cz + 1u),
                     };
 
                     const auto& tetTable = (((cx + cy + cz) & 1u) == 0u) ? evenTets : oddTets;
@@ -201,12 +197,14 @@ namespace CADacomb::Render
             }
         }
 
-        const std::array<std::array<uint32_t, 3>, 4> oppositeFace = { {
-          { 1u, 2u, 3u },
-          { 0u, 3u, 2u },
-          { 0u, 1u, 3u },
-          { 0u, 2u, 1u },
-        } };
+        const std::array<std::array<uint32_t, 3>, 4> oppositeFace = {
+            {
+             { 1u, 2u, 3u },
+             { 0u, 3u, 2u },
+             { 0u, 1u, 3u },
+             { 0u, 2u, 1u },
+             }
+        };
 
         std::unordered_map<uint64_t, uint64_t> faceMap;
         faceMap.reserve(outTetrahedra.size() * 4u);
@@ -228,9 +226,9 @@ namespace CADacomb::Render
                 }
                 else
                 {
-                    uint32_t otherTet  = static_cast<uint32_t>(it->second >> 2u);
-                    uint32_t otherFace = static_cast<uint32_t>(it->second & 3u);
-                    outTetrahedra[tIdx].neighborTets[f]            = static_cast<int32_t>(otherTet);
+                    uint32_t otherTet                               = static_cast<uint32_t>(it->second >> 2u);
+                    uint32_t otherFace                              = static_cast<uint32_t>(it->second & 3u);
+                    outTetrahedra[tIdx].neighborTets[f]             = static_cast<int32_t>(otherTet);
                     outTetrahedra[otherTet].neighborTets[otherFace] = static_cast<int32_t>(tIdx);
                     faceMap.erase(it);
                 }
@@ -268,7 +266,7 @@ namespace CADacomb::Render
 {
     TEST_CASE("SVOTetraCageBuilder/SingleCubeConformingCage")
     {
-        CADacomb::SVO<bool> svo(4u);
+        CADacomb::SVO<bool> svo(4u, false);
         for (int z = 0; z < 4; z++)
         {
             for (int y = 0; y < 4; y++)
@@ -294,7 +292,7 @@ namespace CADacomb::Render
 
     TEST_CASE("SVOTetraCageBuilder/SparseSingleVoxelCellIncluded")
     {
-        CADacomb::SVO<bool> svo(4u);
+        CADacomb::SVO<bool> svo(4u, false);
         svo.setVoxel(glm::ivec3(0, 0, 0), true);
 
         std::vector<GPUTetraVertex>     vertices;

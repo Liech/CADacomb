@@ -65,4 +65,64 @@ namespace CADacomb::IO
     {
         return std::move(diffuseTexture);
     }
+
+    bool FbxSceneData::hasSkeleton() const
+    {
+        return skeleton != nullptr;
+    }
+
+    const Animation::Skeleton* FbxSceneData::getSkeleton() const
+    {
+        return skeleton.get();
+    }
+
+    void FbxSceneData::setSkeleton(std::unique_ptr<Animation::Skeleton> newSkeleton)
+    {
+        skeleton = std::move(newSkeleton);
+    }
+
+    std::unique_ptr<Animation::Skeleton> FbxSceneData::takeSkeleton()
+    {
+        return std::move(skeleton);
+    }
+
+    bool FbxSceneData::hasSkinning() const
+    {
+        return skinning != nullptr;
+    }
+
+    const Animation::TriangulationSkinning* FbxSceneData::getSkinning() const
+    {
+        return skinning.get();
+    }
+
+    void FbxSceneData::setSkinning(std::unique_ptr<Animation::TriangulationSkinning> newSkinning)
+    {
+        skinning = std::move(newSkinning);
+    }
+
+    std::unique_ptr<Animation::TriangulationSkinning> FbxSceneData::takeSkinning()
+    {
+        return std::move(skinning);
+    }
+
+    bool FbxSceneData::hasAnimationClips() const
+    {
+        return !animationClips.empty();
+    }
+
+    const std::vector<Animation::AnimationClip>& FbxSceneData::getAnimationClips() const
+    {
+        return animationClips;
+    }
+
+    void FbxSceneData::addAnimationClip(const Animation::AnimationClip& clip)
+    {
+        animationClips.push_back(clip);
+    }
+
+    std::vector<Animation::AnimationClip> FbxSceneData::takeAnimationClips()
+    {
+        return std::move(animationClips);
+    }
 }
