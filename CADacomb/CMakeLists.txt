@@ -9,6 +9,9 @@ find_package(smlib CONFIG REQUIRED)
 find_package(Jolt CONFIG REQUIRED)
 find_package(ufbx CONFIG REQUIRED)
 find_package(OpenMP)
+if(NOT TARGET Polyglot::Polyglot)
+    find_package(Polyglot CONFIG REQUIRED)
+endif()
 
 set(Animation_Files
     "Source/CADacomb/Animation/Transform.h"
@@ -190,6 +193,18 @@ set(Util_Files
     "Source/CADacomb/Util/Ray.cpp"
 )
 source_group("Source/Util" FILES ${Util_Files})
+
+set(Formula_Files
+    "Source/CADacomb/Formula/Formula.h"
+    "Source/CADacomb/Formula/Formula.cpp"
+    "Source/CADacomb/Formula/FormulaLuaEmitter.h"
+    "Source/CADacomb/Formula/FormulaLuaEmitter.cpp"
+    "Source/CADacomb/Formula/FormulaLuaEvaluator.h"
+    "Source/CADacomb/Formula/FormulaLuaEvaluator.cpp"
+    "Source/CADacomb/Formula/SlangToLuaTranspiler.h"
+    "Source/CADacomb/Formula/SlangToLuaTranspiler.cpp"
+)
+source_group("Source/Formula" FILES ${Formula_Files})
 
 set(CAD_Interface_Files
     "Source/CADacomb/CAD/Interface/Compound.h"
@@ -518,6 +533,7 @@ set(ALL_FILES
     ${Physics_Jolt_Files}
     ${Binary_Files}
     ${Util_Files}
+    ${Formula_Files}
     ${CAD_Interface_Files}
     ${CAD_Sm_Files}
     ${CAD_Conversion_Files}
@@ -549,6 +565,7 @@ target_link_libraries(CADacomb PUBLIC
     smlib::smlib
     Jolt::Jolt
     ufbx::ufbx
+    Polyglot::Polyglot
 )
 
 if(OpenMP_CXX_FOUND)
@@ -592,6 +609,7 @@ if(CADACOMB_BUILD_TESTS)
         smlib::smlib
         Jolt::Jolt
         ufbx::ufbx
+        Polyglot::Polyglot
     )
     if(OpenMP_CXX_FOUND)
         target_link_libraries(CADacombTest PUBLIC OpenMP::OpenMP_CXX)

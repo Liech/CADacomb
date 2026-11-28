@@ -197,10 +197,17 @@ set(Texture_Files
 )
 source_group("Texture" FILES ${Texture_Files})
 
+set(Formula_Files
+    "Source/CADacombRender/Formula/FormulaSlangEmitter.h"
+    "Source/CADacombRender/Formula/FormulaSlangEmitter.cpp"
+)
+source_group("Formula" FILES ${Formula_Files})
+
 set(ALL_FILES
     ${Source_Files}
     ${SVOLOD_Files}
     ${Texture_Files}
+    ${Formula_Files}
     ${SVORaycast_All_Files}
     ${GENERATED_SHADER_HEADERS}
 )
@@ -243,6 +250,7 @@ if(CADACOMB_BUILD_TESTS)
         ${Source_Files}
         ${SVOLOD_Files}
         ${Texture_Files}
+        ${Formula_Files}
         ${SVORaycast_All_Files}
         ${GENERATED_SHADER_HEADERS}
     )
