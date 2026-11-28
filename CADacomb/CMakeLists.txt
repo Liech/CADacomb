@@ -206,6 +206,16 @@ set(Formula_Files
 )
 source_group("Source/Formula" FILES ${Formula_Files})
 
+set(SDF_Files
+    "Source/CADacomb/SDF/Sdf.h"
+    "Source/CADacomb/SDF/Sdf.cpp"
+    "Source/CADacomb/SDF/SdfToSVOConverter.h"
+    "Source/CADacomb/SDF/SdfToSVOConverter.cpp"
+    "Source/CADacomb/SDF/SdfToTriangulationConverter.h"
+    "Source/CADacomb/SDF/SdfToTriangulationConverter.cpp"
+)
+source_group("Source/SDF" FILES ${SDF_Files})
+
 set(CAD_Interface_Files
     "Source/CADacomb/CAD/Interface/Compound.h"
     "Source/CADacomb/CAD/Interface/Compound.cpp"
@@ -534,6 +544,7 @@ set(ALL_FILES
     ${Binary_Files}
     ${Util_Files}
     ${Formula_Files}
+    ${SDF_Files}
     ${CAD_Interface_Files}
     ${CAD_Sm_Files}
     ${CAD_Conversion_Files}

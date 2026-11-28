@@ -203,11 +203,20 @@ set(Formula_Files
 )
 source_group("Formula" FILES ${Formula_Files})
 
+set(SDFRaycast_Files
+    "Source/CADacombRender/SDFRaycast/SdfRaycastParams.h"
+    "Source/CADacombRender/SDFRaycast/SdfRaycastParams.cpp"
+    "Source/CADacombRender/SDFRaycast/SdfRaycastRenderer.h"
+    "Source/CADacombRender/SDFRaycast/SdfRaycastRenderer.cpp"
+)
+source_group("SDFRaycast" FILES ${SDFRaycast_Files})
+
 set(ALL_FILES
     ${Source_Files}
     ${SVOLOD_Files}
     ${Texture_Files}
     ${Formula_Files}
+    ${SDFRaycast_Files}
     ${SVORaycast_All_Files}
     ${GENERATED_SHADER_HEADERS}
 )
@@ -251,6 +260,7 @@ if(CADACOMB_BUILD_TESTS)
         ${SVOLOD_Files}
         ${Texture_Files}
         ${Formula_Files}
+        ${SDFRaycast_Files}
         ${SVORaycast_All_Files}
         ${GENERATED_SHADER_HEADERS}
     )

@@ -34,8 +34,14 @@ local function sqrt(a) return _unOp(a, math.sqrt) end
 local function sin(a) return _unOp(a, math.sin) end
 local function cos(a) return _unOp(a, math.cos) end
 local function tan(a) return _unOp(a, math.tan) end
+local function asin(a) return _unOp(a, math.asin) end
+local function acos(a) return _unOp(a, math.acos) end
+local function atan(a) return _unOp(a, math.atan) end
+local function atan2(y, x) return math.atan(y, x) end
 local function floor(a) return _unOp(a, math.floor) end
 local function ceil(a) return _unOp(a, math.ceil) end
+local function fract(a) return _unOp(a, function(x) return x - math.floor(x) end) end
+local function frac(a) return fract(a) end
 local function exp(a) return _unOp(a, math.exp) end
 local function log(a) return _unOp(a, math.log) end
 local function pow(a, b) return (_isVec(a) or _isVec(b)) and _binOp(a, b, function(x, y) return x ^ y end) or (a ^ b) end
